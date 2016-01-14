@@ -1,6 +1,4 @@
 #include "input.h" 
-#include <Python.h>
-#include <structmember.h>
 #include <float.h>
 #include <algorithm>
 #include <vector>
