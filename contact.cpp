@@ -60,7 +60,6 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
 
   omp_set_num_threads(4);//don't know much to set this
   
-  master_conpnt * conpiv = con; unsigned int celem = 0;
   //Set triangle 1 points A,B,C
   //#pragma force inline recursive
   //#pragma omp parallel for schedule(dynamic,1) collapse(2)
@@ -83,13 +82,47 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
     iREAL marginT1 = 1E-3*dt;
     iREAL marginT2 = 1E-3*dt;
     iREAL margin = marginT1+marginT2;
+    
+    master_conpnt * conpiv = &con[i];   
+    for(master_conpnt *iter = conpiv; iter!=0; iter=iter->next)
+    {//update existing contact points
+      for(int j=0;j<iter->size;j++)
+      {
+        int index = 0;
+        index = iter->slave[0][j];
+
+        iREAL dist = sqrt(pow((q[0][index]-p[0][index]),2)+pow((q[1][index]-p[1][index]),2)+pow((q[2][index]-p[1][index]),2));
+        iREAL midpt[3];
+        midpt[0] = (p[0][index]+q[0][index])/2; //x
+        midpt[1] = (p[1][index]+q[1][index])/2; //y
+        midpt[2] = (p[2][index]+q[2][index])/2; //z
+    
+        iREAL depth = dist - margin;
+    
+        iREAL mul = 1/sqrt(pow(midpt[0],2)+pow(midpt[1],2)+pow(midpt[2],2));
+        iREAL normal[3];
+        normal[0] = mul*midpt[0];
+        normal[1] = mul*midpt[1];
+        normal[2] = mul*midpt[2];
+        
+        iter->point[0][j] = mul*midpt[0];
+        iter->point[1][j] = mul*midpt[1];
+        iter->point[2][j] = mul*midpt[2];
+
+        iter->normal[0][j] = normal[0];
+        iter->normal[1][j] = normal[1];
+        iter->normal[2][j] = normal[2];
+
+        iter->depth[j] = depth;
+      }
+    }
+
     for(unsigned int j=s2;j<e2;j++) //careful; range can overflow due to ghosts particles
     {
       iREAL dist = sqrt(pow((q[0][j]-p[0][j]),2)+pow((q[1][j]-p[1][j]),2)+pow((q[2][j]-p[1][j]),2));
-      //if there is margin overlap
+      //if there is margin overlap or contact point is stored
       if(dist < margin && dist != 0 && (pid[i] != pid[j]))
       {//contact found, //if not same particle body //get min distance contact
-     
         iREAL midpt[3];
         midpt[0] = (p[0][j]+q[0][j])/2; //x
         midpt[1] = (p[1][j]+q[1][j])/2; //y
@@ -103,12 +136,23 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
         normal[1] = mul*midpt[1];
         normal[2] = mul*midpt[2];
         
-        int idx = *ncontacts%CONBUF;//CONBUF set to 8;
-        if(idx == 0)
+        int idx = conpiv->size%CONBUF;//CONBUF set to 8;
+        if(idx == 0 && conpiv->size > 0 )
         {
-          conpiv->next = (master_conpnt*) malloc(sizeof(master_conpnt));
-          conpiv = conpiv->next;
-          celem++;
+          if(conpiv->next == 0) //conpiv->next makes sure that no next contact point exist from previous contacts
+          {
+            conpiv->next = (master_conpnt*) malloc(sizeof(master_conpnt));
+            conpiv = conpiv->next;
+          }
+          else
+          {
+            while(conpiv->next != 0)
+            {
+              conpiv = conpiv->next;
+            }
+            //take to first with gap
+            idx = conpiv->size%CONBUF;
+          }
         }
 
         conpiv->master[idx] = tid[i];
@@ -129,7 +173,7 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
         
         *ncontacts++;
         
-        conpiv->size = *ncontacts%CONBUF; 
+        conpiv->size++; 
       }
     }
   }

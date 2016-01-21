@@ -1,5 +1,13 @@
 #include "forces.h"
 
+
+/*
+ *
+ *WARNING!
+ *
+ *I may create gaps with gone that need to be filled with contact points that are located in con->next.
+ */
+
 int granular_force(iREAL n[3], iREAL vij[3], iREAL oij[3], iREAL depth, int i, int j, iREAL mass[], iREAL invm[], iREAL *iparam[NINT], int ij, iREAL f[3])
 {
   iREAL ma; 
@@ -16,7 +24,16 @@ int granular_force(iREAL n[3], iREAL vij[3], iREAL oij[3], iREAL depth, int i, i
   f[1] = fn*n[1];
   f[2] = fn*n[2];
  
-  /* TODO */ 
+  /* TODO */
+  int ret = 0;
+  if(depth < 0.0)
+  {
+    ret = 1;//depth is smaller than 0 so remove contact
+  }
+  else
+  {
+    ret = 0;//depth is higher than 0 so keep contact
+  }
   return depth < 0.0 ? 1 : 0;
 }
 
@@ -64,7 +81,7 @@ void forces (master_conpnt master[], slave_conpnt slave[],
     v[0] = linear[0][i];
     v[1] = linear[1][i];
     v[2] = linear[2][i];
-return;
+
     x[0] = position[0][i];
     x[1] = position[1][i];
     x[2] = position[2][i];
@@ -94,28 +111,25 @@ return;
         vi[1] = oi[2]*z[0]-oi[0]*z[2] + v[1];
         vi[2] = oi[0]*z[1]-oi[1]*z[0] + v[2];
 
-        int j = con->slave[0][k];
+        int j = con->slave[0][k]; //get index from slave body/contact
 
-        if (j >= 0) // particle-particle 
-        {
-          z[0] = p[0]-position[0][j];
-          z[1] = p[1]-position[1][j];
-          z[2] = p[2]-position[2][j];
+        z[0] = p[0]-position[0][j];
+        z[1] = p[1]-position[1][j];
+        z[2] = p[2]-position[2][j];
 
-          oj[0] = angular[3][j];
-          oj[1] = angular[4][j];
-          oj[2] = angular[5][j];
+        oj[0] = angular[3][j];
+        oj[1] = angular[4][j];
+        oj[2] = angular[5][j];
 
-          vj[0] = oj[1]*z[2]-oj[2]*z[1] + linear[0][j];
-          vj[1] = oj[2]*z[0]-oj[0]*z[2] + linear[1][j];
-          vj[2] = oj[0]*z[1]-oj[1]*z[0] + linear[2][j];
-        }
+        vj[0] = oj[1]*z[2]-oj[2]*z[1] + linear[0][j];
+        vj[1] = oj[2]*z[0]-oj[0]*z[2] + linear[1][j];
+        vj[2] = oj[0]*z[1]-oj[1]*z[0] + linear[2][j];
 
         SUB (vj, vi, vij); // relative linear velocity
         SUB (oj, oi, oij); // relative angular velocity
 
-        int ij = pairing (pairnum, pairs, con->color[0][k], con->color[1][k]);
-        
+        int ij = pairing (pairnum, pairs, con->color[0][k], con->color[1][k]);//get material from colours
+      
         iREAL f[3];
 
         switch (ikind[ij])
@@ -138,16 +152,17 @@ return;
         con->force[1][k] = f[1];
         con->force[2][k] = f[2];
       }
+      
       int ngone = 0;
 
       for (int k = 0; k < con->size; k ++)
-      {
-        if (gone[k] != 0)
+      {//fill gaps
+        if (gone[k] != 0)//gone is 1 so remove contact point.
         {
-          int j = k+1;
-          while (j < con->size && gone[j] != 0) j ++;
-          if (j < con->size)
-          {
+          int j = k+1; //go to next contact id
+          while (j < con->size && gone[j] != 0) j ++;//get j id of last contact
+          if (j < con->size)//loop through the contacts
+          {//replace with last to fill the gone contact point
             con->master[k] = con->master[j];
             con->slave[0][k] = con->slave[0][j];
             con->slave[1][k] = con->slave[1][j];
@@ -171,11 +186,11 @@ return;
         }
       }
 
-      con->size -= ngone;
+      con->size -= ngone; //reduce size of contact points to size-removed/gone
     }
     
-    master_conpnt * con = master[i].next;
-
+    
+    master_conpnt * con = master[i].next; //may be con = master[i] instead of master[i].next
     while (con && con->next) // delete empty items
     {
       master_conpnt * next = con->next;
@@ -187,7 +202,8 @@ return;
       }
 
       con = con->next;
-    }
+    }//this deletes the last element contact from the list
+
     /* symmetrical copy into slave contact points */
     for (master_conpnt * con = &master[i]; con; con = con->next)
     {
@@ -196,48 +212,19 @@ return;
         slave_conpnt *ptr;
         int k=0;
 
-        if (con->slave[0][j] >= 0) /* particle-particle contact */
-        {
-          ptr = newcon (&slave[con->slave[0][j]], &k);
+        ptr = newcon (&slave[con->slave[0][j]], &k);
 
-          ptr->master[0][k] = i;
-          ptr->master[1][k] = con->master[j];
-          ptr->point[0][k] = con->point[0][j];
-          ptr->point[1][k] = con->point[1][j];
-          ptr->point[2][k] = con->point[2][j];
-          ptr->force[0][k] = -con->force[0][j];
-          ptr->force[1][k] = -con->force[1][j];
-          ptr->force[2][k] = -con->force[2][j];
-        }
+        ptr->master[0][k] = i;
+        ptr->master[1][k] = con->master[j];
+        ptr->point[0][k] = con->point[0][j];
+        ptr->point[1][k] = con->point[1][j];
+        ptr->point[2][k] = con->point[2][j];
+        ptr->force[0][k] = -con->force[0][j];
+        ptr->force[1][k] = -con->force[1][j];
+        ptr->force[2][k] = -con->force[2][j];
       }
     }
   }
 }
 
-
-void forces2(unsigned int *tid, unsigned int *pid, master_conpnt *con)
-{
-  for(master_conpnt *i = con; i!=0; i= i->next)//0 = NULL
-  {
-    for(int j = 0; j < i->size; j++)
-    {
-      iREAL normal[3];
-      normal[0] = i->normal[0][j];
-      normal[1] = i->normal[1][j];
-      normal[2] = i->normal[2][j];
-
-      iREAL depth = i->depth[j];
-      
-      iREAL f[3];
-      f[0] = 0;
-      f[1] = 0;
-      f[2] = 0;
-     // granular_force(normal, vij, oij, depth, i, j, mass, invm, ij, f);
-      
-      i->force[0][j] = f[0];
-      i->force[1][j] = f[1];
-      i->force[2][j] = f[2];   
-    }
-  }
-}
 

@@ -64,13 +64,18 @@ int main (int argc, char **argv)
   iREAL *inertia[9]; /* inertia tensors */
   iREAL *inverse[9]; /* inverse inertia tensors */
   iREAL *invm; /* inverse scalar mass */
-  
+ 
+  iREAL gravity[3];
+  gravity[0] = 0;
+  gravity[1] = 0;
+  gravity[2] = 0;
   iREAL *distance; /*distance */
   iREAL *p[3],*q[3];//p and q points
   
   unsigned int nt = 0; /* number of triangles */
   unsigned int *pid; /*particle identifier */
   unsigned int *tid; /* triangle identifiers */
+  master_conpnt *con = 0; slave_conpnt *slave = 0;
   iREAL lo[3] = {-500, -500, -500}; /* lower corner */
   iREAL hi[3] = {500, 500, 500}; /* upper corner */
   
@@ -88,14 +93,17 @@ int main (int argc, char **argv)
       
 		p[i] = (iREAL *) malloc (size*sizeof(iREAL));
 		q[i] = (iREAL *) malloc (size*sizeof(iREAL));
-	}
+  }
 	
 	for (int i = 0; i < 6; i++)
 	{
 		angular[i] = (iREAL *) malloc (size*sizeof(iREAL));
 	}
+  
+  con = (master_conpnt *) malloc (size*sizeof(master_conpnt));
+  slave = (slave_conpnt *) malloc (size*sizeof(slave_conpnt));
 	
-	parmat = (int *) malloc (size*sizeof(int));
+  parmat = (int *) malloc (size*sizeof(int));
 	
 	tid = (unsigned int *) malloc (size*sizeof(unsigned int));
 	pid = (unsigned int *) malloc (size*sizeof(unsigned int));
@@ -111,7 +119,7 @@ int main (int argc, char **argv)
   unsigned long long int ncontacts = 0;
   
   /* perform time stepping */
-  iREAL step = 1E-3, time; unsigned int timesteps=0; master_conpnt *con = 0; slave_conpnt *slave = 0;
+  iREAL step = 1E-3, time; unsigned int timesteps=0; 
   
   for(time = 0; time < 0.1; time+=step)
   {
@@ -121,7 +129,7 @@ int main (int argc, char **argv)
 		 
     forces(con, slave, nt, position, angular, v, mass, invm, parmat, mparam, pairnum, pairs, ikind, iparam);
 
-    //dynamics(con, slave, nt, angular, v, rotation, position, inertia, inverse, mass, invm, torque, gravity, step);
+    dynamics(con, slave, nt, angular, v, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
     
     output_state(nt, t, v, timesteps);
     

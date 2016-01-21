@@ -8,7 +8,7 @@
 #include <fstream>
 #include <iomanip>
 
-void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL *centroid[3], unsigned int bodyidx)
+void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL *centroid[3])
 {
   iREAL cx=0;
   iREAL cy=0;
@@ -27,10 +27,12 @@ void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL
   cx = cx/((range2-range1)*3);
   cy = cy/((range2-range1)*3);
   cz = cz/((range2-range1)*3);
-
-  centroid[0][bodyidx] = cx;
-  centroid[1][bodyidx] = cy;
-  centroid[2][bodyidx] = cz;
+  for(int i=range1;i<range2;i++)
+  {
+    centroid[0][i] = cx;
+    centroid[1][i] = cy;
+    centroid[2][i] = cz;
+  }
 }
 
 
@@ -337,7 +339,7 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, unsigned i
     pid[i] = bodyidx;
   }
   
-  getCentroid(initidx, initidx+n, t, position, bodyidx);
+  getCentroid(initidx, initidx+n, t, position);
   
   *mint = min;
   *maxt = max;
@@ -491,7 +493,7 @@ void load_points(int ptype, unsigned int *nt, unsigned int bodyID, unsigned int 
               tid[i] = i;
               pid[i] = bodyID;
           }
-          getCentroid(startIDX, startIDX+n, t, position, bodyID);
+          getCentroid(startIDX, startIDX+n, t, position);
       }
   } while (ch != EOF);
   *mint = min;

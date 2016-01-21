@@ -11,37 +11,8 @@ void gen_velocities (iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * v[3])
     }
 }
 
-void dynamics (master_conpnt master[], slave_conpnt slave[],
-  int parnum, iREAL * angular[6], iREAL * v[3],
-  iREAL * rotation[9], iREAL * position[6],
-  iREAL * inertia[9], iREAL * inverse[9],
-  iREAL mass[], iREAL invm[], iREAL * force[3],
-  iREAL * torque[3], iREAL gravity[3], iREAL step)
-{
-  int idx = 0;
-  for(master_conpnt *i = master; i!=NULL; i= i->next)
-  {
-    //filter out multiple contact points
-    for(int j = 0; j<i->size; j++)
-    {
-      idx = i->masterid[j];
-      
-      int counter = 0;
-      int idxx = 0;
-       
-      for(master_conpnt *ii = master; ii!=NULL; ii= ii->next)
-      {
-        if (idx == ii->masterid[idxx])
-        {
-          counter = counter + 1;
-        }
-      }
-    }
-  }
-}
-
 // dynamics task 
-/*void dynamics (master_conpnt master[], slave_conpnt slave[],
+void dynamics (master_conpnt master[], slave_conpnt slave[],
   int parnum, iREAL * angular[6], iREAL * linear[3],
   iREAL * rotation[9], iREAL * position[6],
   iREAL * inertia[9], iREAL * inverse[9],
@@ -208,16 +179,13 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     linear[1][i] = v[1];
     linear[2][i] = v[2];
   }
-}*/
+}
 
-/*
+
 // invert inertia properties 
-void invert (int span, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
+void invert (int nt, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
 {
-  int start = 0;
-  int end = span;
-
-  for(int i = start; i<end;i++)
+  for(int i = 0; i<nt;i++)
   {
     iREAL a[9], x[9], det;
 
@@ -237,40 +205,6 @@ void invert (int span, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iRE
   }
 }
 
-// estimate critical time step 
-iREAL critical (int parnum, iREAL mass[], int pairnum, iREAL * iparam[NINT])
-{
-  iREAL kmax, emax, mmin, omax, step;
-  iREAL k, e, m;
-
-  k = 0.0;
-  e = 0.0;
-
-  for(int i = 0; i<pairnum;i++)
-  {
-    k = max(iparam[SPRING][i],k);
-    e = max(iparam[DAMPER][i],e);
-  }
-
-  kmax = reduce_max(k);
-  emax = reduce_max(e);
-
-  m = 1E99;
-
-  for(int i = 0; i<parnum;i++)
-  {
-    m = min(mass[i],m);
-  }
-
-  mmin = m;
-
-  omax = sqrt (kmax/mmin);
-
-  //http://www.dynasupport.com/tutorial/ls-dyna-users-guide/time-integration 
-  step  = (2.0/omax)*(sqrt(1.0+emax*emax) - emax);
-
-  return step;
-}
 
 // Euler task 
 void euler_task (int span, int parnum, iREAL * angular[6],
@@ -322,7 +256,7 @@ void euler_task (int span, int parnum, iREAL * angular[6],
     position[2][i] += step * linear[0][i];
   }
 }
-*/
+
 
 void integrate (iREAL step, iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * t[3][3], iREAL * v[3])
 {
@@ -364,4 +298,84 @@ void integrate (iREAL step, iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * t
 //id: body/particle id,  
 void translate(unsigned int id)
 {
+}
+
+
+/* vectorizable exponential map */
+static void expmap (iREAL Omega1, iREAL Omega2, iREAL Omega3,
+                iREAL &Lambda1, iREAL &Lambda2, iREAL &Lambda3,
+			          iREAL &Lambda4, iREAL &Lambda5, iREAL &Lambda6,
+			          iREAL &Lambda7, iREAL &Lambda8, iREAL &Lambda9)
+{
+  iREAL angsq, sx, cx, v0, v1, v2, v01, v02, v12, s0, s1, s2;
+
+  v0 = Omega1 * Omega1;
+  v1 = Omega2 * Omega2;
+  v2 = Omega3 * Omega3;
+
+  angsq = v0 + v1 + v2;
+
+  if (angsq < 3.0461741978671E-02) // use Taylor expansion if |Omega| < 10 deg
+  {
+    sx = 1.0 +
+    (-1.666666666666667E-1 +
+    (8.333333333333333E-3 +
+    (-1.984126984126984E-4 +
+    (2.755731922398589E-6 +
+    (-2.505210838544172E-8 +
+     1.605904383682161E-10 * angsq
+    )*angsq
+    )*angsq
+    )*angsq
+    )*angsq
+    )*angsq;
+  cx = 0.5 +
+    (-4.166666666666667E-2 +
+    (1.388888888888889E-3 +
+    (-2.480158730158730E-5 +
+    (2.755731922398589E-7 +
+    (-2.087675698786810E-9 +
+     1.147074559772972E-11 * angsq
+    )*angsq
+    )*angsq
+    )*angsq
+    )*angsq
+    )*angsq;
+  }
+  else
+  {
+    iREAL t, s, c;
+    t = angsq;
+    angsq = sqrt (angsq);
+    s = sin (angsq);
+    c = cos (angsq);
+    sx = s / angsq;
+    cx = (1.0 - c) / t;
+  }
+
+  v01 = Omega1 * Omega2;
+  v02 = Omega2 * Omega3;
+  v12 = Omega2 * Omega3;
+  s0 = sx * Omega1;
+  s1 = sx * Omega2;
+  s2 = sx * Omega3;
+
+  Lambda1 = -cx*(v2+v1);
+  Lambda2 = cx*v01;
+  Lambda3 = cx*v02;
+  Lambda4 = Lambda2;
+  Lambda5 = -cx*(v2+v0);
+  Lambda6 = cx*v12;
+  Lambda7 = Lambda3;
+  Lambda8 = Lambda6;
+  Lambda9 = -cx*(v1+v0);
+  Lambda1 += 1.0;
+  Lambda2 += s2;
+  Lambda3 -= s1;
+  Lambda4 -= s2;
+  Lambda5 += 1.0;
+  Lambda6 += s0;
+  Lambda7 += s1;
+  Lambda8 -= s0;
+  Lambda9 += 1.0;
 }
