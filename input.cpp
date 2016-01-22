@@ -8,6 +8,28 @@
 #include <fstream>
 #include <iomanip>
 
+// invert inertia properties 
+void invert (int nt, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
+{
+  for(int i = 0; i<nt;i++)
+  {
+    iREAL a[9], x[9], det;
+
+    for (int j = 0; j < 9; j ++)
+    {
+      a[j] = inertia[j][i];
+    }
+    INVERT (a, x, det);
+
+    for (int j = 0; j < 9; j ++)
+    {
+      inverse[j][i] = x[j];
+    }
+
+    invm[i] = 1.0 / mass[i];
+  }
+}
+
 void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL *centroid[3])
 {
   iREAL cx=0;
@@ -27,7 +49,7 @@ void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL
   cx = cx/((range2-range1)*3);
   cy = cy/((range2-range1)*3);
   cz = cz/((range2-range1)*3);
-  for(int i=range1;i<range2;i++)
+  for(unsigned int i=range1;i<range2;i++)
   {
     centroid[0][i] = cx;
     centroid[1][i] = cy;
@@ -51,10 +73,11 @@ void translate_enviroment(unsigned int tid, iREAL *t[3][3], iREAL p[3])
   t[2][2][tid] = t[2][2][tid] + p[2];
 }
 
-void condition_enviroment(unsigned int nt, unsigned int nParticles, iREAL *v[3], unsigned int pid[])
+void condition_enviroment(unsigned int nt, unsigned int nb, iREAL *v[3], iREAL *angular[6], 
+                        iREAL *mass, iREAL *inertia[9], iREAL *inverse[9], iREAL *invm, int *parmat, unsigned int pid[])
 {
   unsigned int counter=0;
-  for(unsigned int j = 0; j < nParticles; j++)
+  for(unsigned int j = 0; j < nb; j++)
   {
     iREAL rand = drand48();//random pull velocity
     for(unsigned int i = counter; i < nt; i++)
@@ -64,6 +87,26 @@ void condition_enviroment(unsigned int nt, unsigned int nParticles, iREAL *v[3],
         v[0][i] = 250 * rand;
         v[1][i] = 0;
         v[2][i] = 0;
+
+        angular[0][i] = 0;
+        angular[1][i] = 0;
+        angular[2][i] = 0;
+        angular[3][i] = 0;
+        angular[4][i] = 0;
+        angular[5][i] = 0;
+        
+        mass[i] = 1;
+        parmat[i] = 1;
+
+        inertia[0][i] = 1;
+        inertia[1][i] = 1;
+        inertia[2][i] = 1;
+        inertia[3][i] = 1;
+        inertia[4][i] = 1;
+        inertia[5][i] = 1;
+        inertia[6][i] = 1;
+        inertia[7][i] = 1;
+        inertia[8][i] = 1;
         counter++;
       } else
       {
@@ -71,10 +114,13 @@ void condition_enviroment(unsigned int nt, unsigned int nParticles, iREAL *v[3],
       }
     }
   }
+
+  invert (nt, inertia, inverse, mass, invm);
 }
 
-void init_enviroment(unsigned int *nt, unsigned int *nParticles, 
-                iREAL *t[3][3], iREAL *v[3], unsigned int tid[], unsigned int pid[], iREAL *position[3], iREAL lo[3], iREAL hi[3])
+void init_enviroment(unsigned int *nt, unsigned int *nb, 
+                    iREAL *t[3][3], iREAL *v[3], iREAL *angular[6], iREAL *inertia[9], iREAL *inverse[9], 
+                    iREAL *mass, iREAL *invm, int *parmat, unsigned int tid[], unsigned int pid[], iREAL *position[3], iREAL lo[3], iREAL hi[3])
 {
   //Input Type
   //0: Triangulated Mesh
@@ -95,12 +141,12 @@ void init_enviroment(unsigned int *nt, unsigned int *nParticles,
    
    
   //non-spherical particles generation and loading
-  *nParticles = 50;
-  int ptype[*nParticles];
-  for(unsigned int i = 0; i < *nParticles; i++){ptype[i] = 6;}
+  *nb = 50;
+  int ptype[*nb];
+  for(unsigned int i = 0; i < *nb; i++){ptype[i] = 6;}
   
   iREAL mint, maxt;
-  load_enviroment(ptype, nt, *nParticles, t, tid, pid, position, &mint, &maxt);
+  load_enviroment(ptype, nt, *nb, t, tid, pid, position, &mint, &maxt);
  // iREAL velo[3] = {50, 50, 50};
   lo[0] = -250; // lower corner
   lo[1] = -250; // lower corner
@@ -123,7 +169,7 @@ void init_enviroment(unsigned int *nt, unsigned int *nParticles,
     {
       for(int kk = lo[2]; kk < hi[2]; kk=kk+radius)
       {
-        if(idx < *nParticles)
+        if(idx < *nb)
         {
           //computer position to translate
           for(unsigned int j = counter; j < *nt; j++)
@@ -142,7 +188,8 @@ void init_enviroment(unsigned int *nt, unsigned int *nParticles,
       }
     }
   }
-  condition_enviroment(*nt, *nParticles, v, pid);
+
+  condition_enviroment(*nt, *nb, v, angular, mass, inertia, inverse, invm, parmat, pid);
 }
 
 void load_enviroment(int ptype[], unsigned int *nt, unsigned int nParticles, 

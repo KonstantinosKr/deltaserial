@@ -1,4 +1,5 @@
 #include "dynamics.h"
+#include "stdio.h"
 
 
 void gen_velocities (iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * v[3])
@@ -13,7 +14,7 @@ void gen_velocities (iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * v[3])
 
 // dynamics task 
 void dynamics (master_conpnt master[], slave_conpnt slave[],
-  int parnum, iREAL * angular[6], iREAL * linear[3],
+  int nt, iREAL * angular[6], iREAL * linear[3],
   iREAL * rotation[9], iREAL * position[6],
   iREAL * inertia[9], iREAL * inverse[9],
   iREAL mass[], iREAL invm[], iREAL * force[3],
@@ -21,7 +22,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
 {
   iREAL half = 0.5*step;
 
-  for (int i = 0; i < parnum; i ++) // force accumulation
+  for (int i = 0; i < nt; i ++) // force accumulation
   {
     iREAL f[3], a[3], fs[3], ts[3];
     iREAL po[3], ma;
@@ -29,7 +30,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     po[0] = position[0][i];
     po[1] = position[1][i];
     po[2] = position[2][i];
-
+    
     ma = mass[i];
 
     SET (fs, 0.0);
@@ -78,7 +79,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     torque[2][i] = ts[2];
   }
 
-  for (int i = 0; i<parnum; i++) // time integration 
+  for (int i = 0; i<nt; i++) // time integration 
   {
     iREAL O[3], o[3], v[3], L1[9], J[9], I[9], im, f[3], t[3], T[3], DL[9], L2[9], A[3], B[3];
 
@@ -182,38 +183,12 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
 }
 
 
-// invert inertia properties 
-void invert (int nt, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
-{
-  for(int i = 0; i<nt;i++)
-  {
-    iREAL a[9], x[9], det;
-
-    for (int j = 0; j < 9; j ++)
-    {
-      a[j] = inertia[j][i];
-    }
-    
-    INVERT (a, x, det);
-
-    for (int j = 0; j < 9; j ++)
-    {
-      inverse[j][i] = x[j];
-    }
-
-    invm[i] = 1.0 / mass[i];
-  }
-}
-
 
 // Euler task 
-void euler_task (int span, int parnum, iREAL * angular[6],
+void euler(int nt, iREAL * angular[6],
   iREAL * linear[3], iREAL * rotation[9], iREAL * position[3], iREAL step)
 {
-  int start = 0;
-  int end = span;
-
-  for(int i = start; i<end;i++)
+  for(int i = 0; i<nt;i++)
   {
     iREAL O[3], L1[9], DL[9], L2[9], o[3];
 
@@ -295,14 +270,9 @@ void integrate (iREAL step, iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * t
     }
 }
 
-//id: body/particle id,  
-void translate(unsigned int id)
-{
-}
-
 
 /* vectorizable exponential map */
-static void expmap (iREAL Omega1, iREAL Omega2, iREAL Omega3,
+void expmap (iREAL Omega1, iREAL Omega2, iREAL Omega3,
                 iREAL &Lambda1, iREAL &Lambda2, iREAL &Lambda3,
 			          iREAL &Lambda4, iREAL &Lambda5, iREAL &Lambda6,
 			          iREAL &Lambda7, iREAL &Lambda8, iREAL &Lambda9)

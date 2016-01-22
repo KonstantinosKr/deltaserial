@@ -14,7 +14,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
   iREAL * torque[3], iREAL gravity[3], iREAL step);
 
 
-static void expmap (iREAL Omega1, iREAL Omega2, iREAL Omega3,
+void expmap (iREAL Omega1, iREAL Omega2, iREAL Omega3,
                 iREAL &Lambda1, iREAL &Lambda2, iREAL &Lambda3,
 			          iREAL &Lambda4, iREAL &Lambda5, iREAL &Lambda6,
 			          iREAL &Lambda7, iREAL &Lambda8, iREAL &Lambda9);

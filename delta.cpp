@@ -39,6 +39,7 @@ int main (int argc, char **argv)
     iparam[i] = (iREAL *) malloc(1*sizeof(iREAL));
   }
 
+
   //set first kind
   ikind[0] = GRANULAR;
   
@@ -80,7 +81,6 @@ int main (int argc, char **argv)
   iREAL hi[3] = {500, 500, 500}; /* upper corner */
   
   unsigned int size = 27000000; /* memory buffer size */
-  int nprocs, myrank;
    
 	for (int i = 0; i < 3; i ++)
 	{ 
@@ -90,7 +90,9 @@ int main (int argc, char **argv)
 		v[i] = (iREAL *) malloc (size*sizeof(iREAL));
     
     position[i] = (iREAL *) malloc (size*sizeof(iREAL)); 
-      
+    torque[i] = (iREAL *) malloc (size*sizeof(iREAL));
+    force[i] = (iREAL *) malloc (size*sizeof(iREAL));
+
 		p[i] = (iREAL *) malloc (size*sizeof(iREAL));
 		q[i] = (iREAL *) malloc (size*sizeof(iREAL));
   }
@@ -99,7 +101,14 @@ int main (int argc, char **argv)
 	{
 		angular[i] = (iREAL *) malloc (size*sizeof(iREAL));
 	}
-  
+ 
+  for (int i = 0; i<9; i++)
+  {
+    inverse[i] = (iREAL *) malloc (size*sizeof(iREAL));
+    inertia[i] = (iREAL *) malloc (size*sizeof(iREAL));
+    rotation[i] = (iREAL *) malloc (size*sizeof(iREAL));
+  }
+
   con = (master_conpnt *) malloc (size*sizeof(master_conpnt));
   slave = (slave_conpnt *) malloc (size*sizeof(slave_conpnt));
 	
@@ -107,15 +116,16 @@ int main (int argc, char **argv)
 	
 	tid = (unsigned int *) malloc (size*sizeof(unsigned int));
 	pid = (unsigned int *) malloc (size*sizeof(unsigned int));
-	
+
+  invm = (iREAL *) malloc(size*sizeof(iREAL));
 	mass = (iREAL *) malloc(size*sizeof(iREAL));
 
 	for(unsigned int i=0;i<size;i++) tid[i] = UINT_MAX; 
 	
-	unsigned int nparticles;
-	init_enviroment(&nt, &nparticles, t, v, tid, pid, position, lo, hi);  
-	printf("NT:%i\n", nt);
-
+	unsigned int nb;
+	init_enviroment(&nt, &nb, t, v, angular, inertia, inverse, mass, invm, parmat, tid, pid, position, lo, hi);  
+	printf("NT:%i NB:%i\n", nt, nb);
+  
   unsigned long long int ncontacts = 0;
   
   /* perform time stepping */
@@ -128,7 +138,7 @@ int main (int argc, char **argv)
     contact_detection (0, nt, 0, nt, t, tid, pid, v, step, p, q, con, &ncontacts);
 		 
     forces(con, slave, nt, position, angular, v, mass, invm, parmat, mparam, pairnum, pairs, ikind, iparam);
-
+  
     dynamics(con, slave, nt, angular, v, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
     
     output_state(nt, t, v, timesteps);
