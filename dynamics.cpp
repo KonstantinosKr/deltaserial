@@ -207,7 +207,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
   }
 }
 
-void shapes (int nb, unsigned int nt, iREAL lo[3], iREAL hi[3], unsigned int pid[], iREAL * t[6][3], iREAL * rotation[9], iREAL * position[6])
+void shapes (int nb, unsigned int nt, iREAL lo[3], iREAL hi[3], unsigned int pid[], iREAL * t[6][3], iREAL *v[3], iREAL * rotation[9], iREAL * position[6])
 {
   for (unsigned int i = 0; i<nt; i++)
   {
@@ -270,6 +270,27 @@ void shapes (int nb, unsigned int nt, iREAL lo[3], iREAL hi[3], unsigned int pid
     t[2][0][i] = c[0];
     t[2][1][i] = c[1];
     t[2][2][i] = c[2];
+    
+    if (t[0][0][i] < lo[0]) v[0][j] *= -1;
+    if (t[0][1][i] < lo[1]) v[1][j] *= -1;
+    if (t[0][2][i] < lo[2]) v[2][j] *= -1;
+    if (t[0][0][i] > hi[0]) v[0][j] *= -1;
+    if (t[0][1][i] > hi[1]) v[1][j] *= -1;
+    if (t[0][2][i] > hi[2]) v[2][j] *= -1;
+    
+    if (t[1][0][i] < lo[0]) v[0][j] *= -1;
+    if (t[1][1][i] < lo[1]) v[1][j] *= -1;
+    if (t[1][2][i] < lo[2]) v[2][j] *= -1;
+    if (t[1][0][i] > hi[0]) v[0][j] *= -1;
+    if (t[1][1][i] > hi[1]) v[1][j] *= -1;
+    if (t[1][2][i] > hi[2]) v[2][j] *= -1;
+    
+    if (t[2][0][i] < lo[0]) v[0][j] *= -1;
+    if (t[2][1][i] < lo[1]) v[1][j] *= -1;
+    if (t[2][2][i] < lo[2]) v[2][j] *= -1;
+    if (t[2][0][i] > hi[0]) v[0][j] *= -1;
+    if (t[2][1][i] > hi[1]) v[1][j] *= -1;
+    if (t[2][2][i] > hi[2]) v[2][j] *= -1;
   }
 }
 

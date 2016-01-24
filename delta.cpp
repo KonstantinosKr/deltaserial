@@ -132,7 +132,7 @@ int main (int argc, char **argv)
   iREAL step = 1E-3, time; unsigned int timesteps=1; 
   
   euler(nb, angular, linear, rotation, position, 0.5*step);//half step
-  shapes (nb, nt, lo, hi, pid, t, rotation, position);
+  shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
   output_state(nt, t, 0);
    
   for(time = 1E-3; time < 1; time+=step)
@@ -145,7 +145,7 @@ int main (int argc, char **argv)
   
     dynamics(con, slave, nb, angular, linear, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
     
-    shapes (nb, nt, lo, hi, pid, t, rotation, position);
+    shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
 
     output_state(nt, t, timesteps);
     

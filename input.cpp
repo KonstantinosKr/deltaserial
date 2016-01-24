@@ -98,8 +98,8 @@ void condition_enviroment(unsigned int nb, iREAL *v[3], iREAL *angular[6], iREAL
   {
     iREAL rand = drand48();//random pull velocity
     v[0][i] = 500 * rand;
-    v[1][i] = 0;//500 * rand;
-    v[2][i] = 0;//500 * rand;
+    v[1][i] = 500 * rand;
+    v[2][i] = 500 * rand;
     
     iREAL randomrot = 5 *rand;
     angular[0][i] = randomrot;
