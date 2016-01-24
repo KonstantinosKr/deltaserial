@@ -14,15 +14,39 @@ void gen_velocities (iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * v[3])
 
 // dynamics task 
 void dynamics (master_conpnt master[], slave_conpnt slave[],
-  int nt, iREAL * angular[6], iREAL * linear[3],
+  int nb, iREAL * angular[6], iREAL * linear[3],
   iREAL * rotation[9], iREAL * position[6],
   iREAL * inertia[9], iREAL * inverse[9],
   iREAL mass[], iREAL invm[], iREAL * force[3],
   iREAL * torque[3], iREAL gravity[3], iREAL step)
 {
   iREAL half = 0.5*step;
+ 
+  /* symmetrical copy into slave contact points */
+  for(int i = 0; i<nb;i++)
+  {
+    for (master_conpnt * con = &master[i]; con; con = con->next)
+    {
+      for (int j = 0; j < con->size; j ++)
+      {
+        slave_conpnt *ptr;
+        int k=0;
 
-  for (int i = 0; i < nt; i ++) // force accumulation
+        ptr = newcon (&slave[con->slave[0][j]], &k);
+
+        ptr->master[0][k] = i;
+        ptr->master[1][k] = con->master[j];
+        ptr->point[0][k] = con->point[0][j];
+        ptr->point[1][k] = con->point[1][j];
+        ptr->point[2][k] = con->point[2][j];
+        ptr->force[0][k] = -con->force[0][j];
+        ptr->force[1][k] = -con->force[1][j];
+        ptr->force[2][k] = -con->force[2][j];
+      }
+    }
+  }
+
+  for (int i = 0; i < nb; i ++) // force accumulation
   {
     iREAL f[3], a[3], fs[3], ts[3];
     iREAL po[3], ma;
@@ -79,7 +103,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     torque[2][i] = ts[2];
   }
 
-  for (int i = 0; i<nt; i++) // time integration 
+  for (int i = 0; i<nb; i++) // time integration 
   {
     iREAL O[3], o[3], v[3], L1[9], J[9], I[9], im, f[3], t[3], T[3], DL[9], L2[9], A[3], B[3];
 
@@ -182,21 +206,84 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
   }
 }
 
+void shapes (int nb, unsigned int nt, iREAL lo[3], iREAL hi[3], unsigned int pid[], iREAL * t[6][3], iREAL *v[3], iREAL * rotation[9], iREAL * position[6])
+{
+  for (unsigned int i = 0; i<nt; i++)
+  {
+    iREAL L[9], X[3], x[3], C[3], c[3];
 
+    int j = pid[i];
+    L[0] = rotation[0][j];
+    L[1] = rotation[1][j];
+    L[2] = rotation[2][j];
+    L[3] = rotation[3][j];
+    L[4] = rotation[4][j];
+    L[5] = rotation[5][j];
+    L[6] = rotation[6][j];
+    L[7] = rotation[7][j];
+    L[8] = rotation[8][j];
+
+    X[0] = position[3][j];
+    X[1] = position[4][j];
+    X[2] = position[5][j];
+
+    x[0] = position[0][j];
+    x[1] = position[1][j];
+    x[2] = position[2][j];
+
+    //point A REFERENCIAL
+    C[0] = t[3][0][i];
+    C[1] = t[3][1][i];
+    C[2] = t[3][2][i];
+  
+    SCC (X, C);
+    NVADDMUL (x, L, C, c);
+
+    //point A SPATIAL
+    t[0][0][i] = c[0];
+    t[0][1][i] = c[1];
+    t[0][2][i] = c[2];
+    
+    //point B REFERENTIAL
+    C[0] = t[4][0][i];
+    C[1] = t[4][1][i];
+    C[2] = t[4][2][i];
+
+    SCC (X, C);
+    NVADDMUL (x, L, C, c);
+
+    //point B SPATIAL
+    t[1][0][i] = c[0];
+    t[1][1][i] = c[1];
+    t[1][2][i] = c[2];
+    
+    //point C REFERENCIAL
+    C[0] = t[5][0][i];
+    C[1] = t[5][1][i];
+    C[2] = t[5][2][i];
+
+    SCC (X, C);
+    NVADDMUL (x, L, C, c);
+
+    //point C SPATIAL
+    t[2][0][i] = c[0];
+    t[2][1][i] = c[1];
+    t[2][2][i] = c[2];
+  }
+}
 
 // Euler task 
-void euler(int nt, iREAL * angular[6],
-  iREAL * linear[3], iREAL * rotation[9], iREAL * position[3], iREAL step)
+void euler(int nb, iREAL * angular[6], iREAL * linear[3], iREAL * rotation[9], iREAL * position[3], iREAL step)
 {
-  for(int i = 0; i<nt;i++)
+  for(int i = 0; i<nb;i++)
   {
     iREAL O[3], L1[9], DL[9], L2[9], o[3];
 
-    O[0] = step*angular[0][i];
-    O[1] = step*angular[1][i];
-    O[2] = step*angular[2][i];
+    O[0] = angular[0][i];
+    O[1] = angular[1][i];
+    O[2] = angular[2][i];
 
-    expmap (O[0], O[1], O[2], DL[0], DL[1], DL[2], DL[3], DL[4], DL[5], DL[6], DL[7], DL[8]);
+    expmap (step*O[0], step*O[1], step*O[2], DL[0], DL[1], DL[2], DL[3], DL[4], DL[5], DL[6], DL[7], DL[8]);
 
     L1[0] = rotation[0][i];
     L1[1] = rotation[1][i];
@@ -227,8 +314,8 @@ void euler(int nt, iREAL * angular[6],
     angular[5][i] = o[2];
 
     position[0][i] += step * linear[0][i];
-    position[1][i] += step * linear[0][i];
-    position[2][i] += step * linear[0][i];
+    position[1][i] += step * linear[1][i];
+    position[2][i] += step * linear[2][i];
   }
 }
 

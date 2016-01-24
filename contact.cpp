@@ -49,13 +49,12 @@ slave_conpnt * newcon (slave_conpnt * slave, int *k)
 
 //s1 and e1 mean start of section 1 and end of section 1, same for s2,e2 and nt size nts1, nts2
 void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsigned int e2, 
-                        iREAL *t[3][3], unsigned int *tid, unsigned int *pid, iREAL *v[3], iREAL dt, 
-                        iREAL *p[3], iREAL *q[3], master_conpnt *con, unsigned long long int *ncontacts)
+                        iREAL *t[6][3], unsigned int *tid, unsigned int *pid, iREAL *v[3], iREAL dt, 
+                        iREAL *p[3], iREAL *q[3], master_conpnt *con)
 {
   //unsigned int nts1 = e1-s1;
   //unsigned int nts2 = e2-s2;
   
-  *ncontacts = 0;//use as counter
   iREAL a[3], b[3], c[3];
 
   omp_set_num_threads(4);//don't know much to set this
@@ -83,7 +82,7 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
     iREAL marginT2 = 1E-3*dt;
     iREAL margin = marginT1+marginT2;
     
-    master_conpnt * conpiv = &con[i];   
+    master_conpnt * conpiv = &con[pid[i]];   
     for(master_conpnt *iter = conpiv; iter!=0; iter=iter->next)
     {//update existing contact points
       for(int j=0;j<iter->size;j++)
@@ -156,9 +155,7 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
         }
 
         conpiv->master[idx] = tid[i];
-        conpiv->masterid[idx] = pid[i];
         conpiv->slave[0][idx] = tid[j];
-        conpiv->slaveid[idx] = pid[j];
         
         //store contact point;
         conpiv->point[0][idx] = mul*midpt[0];
@@ -170,8 +167,6 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
         conpiv->normal[2][idx] = normal[2];
 
         conpiv->depth[idx] = depth;
-        
-        *ncontacts++;
         
         conpiv->size++; 
       }

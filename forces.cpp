@@ -65,12 +65,12 @@ int pairing (int nummat, int pairs[], int i, int j)
 }
 
 void forces (master_conpnt master[], slave_conpnt slave[],
-  int nt, iREAL * position[3], iREAL * angular[6], iREAL * linear[3],
+  int nb, iREAL * position[3], iREAL * angular[6], iREAL * linear[3],
   iREAL mass[], iREAL invm[], int parmat[], iREAL * mparam[NMAT],
   int pairnum, int pairs[], int ikind[], iREAL * iparam[NINT])
 {
 
-  for (int i = 0; i < nt; i++)
+  for (int i = 0; i < nb; i++)
   {
     iREAL oi[3], v[3], x[3];
 

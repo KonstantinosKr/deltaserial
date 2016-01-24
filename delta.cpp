@@ -13,11 +13,6 @@
 
 int main (int argc, char **argv)
 {
-  iREAL *t[3][3]; /* triangles */
-  iREAL *v[3]; /* velocities */
-  iREAL *mass; /* scalar mass */
-  iREAL *force[3]; /* total spatial force */
-  iREAL *torque[3]; /* total spatial torque */
  
   int *parmat; /* particle material */
   iREAL *mparam[NMAT]; /* material parameters */ 
@@ -28,24 +23,21 @@ int main (int argc, char **argv)
 
   int pairnum = 1;
   int *pairs; /* color pairs */
-  pairs = (int *) malloc(pairnum*sizeof(pairnum));
-
   int *ikind; /* interaction kind */
-  ikind = (int *) malloc(1*sizeof(int)); //number of interaction kinds/types
-
   iREAL *iparam[NINT]; // interaction parameters // parameters per interaction type
+  
+  pairs = (int *) malloc(pairnum*sizeof(pairnum));
+  ikind = (int *) malloc(1*sizeof(int)); //number of interaction kinds/types
+  ikind[0] = GRANULAR; //set first kind
+
   for(int i=0;i<NINT;i++)
   {
     iparam[i] = (iREAL *) malloc(1*sizeof(iREAL));
   }
 
-
-  //set first kind
-  ikind[0] = GRANULAR;
-  
   //GRANULAR interaction type parameters 
-  iparam[SPRING][GRANULAR] = 0;
-  iparam[DAMPER][GRANULAR] = 0;
+  iparam[SPRING][GRANULAR] = 1;
+  iparam[DAMPER][GRANULAR] = 1;
   iparam[FRISTAT][GRANULAR] = 0;
   iparam[FRIDYN][GRANULAR] = 0;
   iparam[FRIROL][GRANULAR] = 0;
@@ -59,10 +51,13 @@ int main (int argc, char **argv)
   iparam[ALPHA][GRANULAR] = 0;
 
   iREAL *angular[6]; /* angular velocities (referential, spatial) */
-  //iREAL *linear[3]; /* linear velocities */
+  iREAL *linear[3]; /* linear velocities */
   iREAL *rotation[9]; /* rotation operators */
   iREAL *position[6]; /* mass center current and reference positions */
   iREAL *inertia[9]; /* inertia tensors */
+  iREAL *mass; /* scalar mass */
+  iREAL *force[3]; /* total spatial force */
+  iREAL *torque[3]; /* total spatial torque */
   iREAL *inverse[9]; /* inverse inertia tensors */
   iREAL *invm; /* inverse scalar mass */
  
@@ -70,13 +65,16 @@ int main (int argc, char **argv)
   gravity[0] = 0;
   gravity[1] = 0;
   gravity[2] = 0;
-  iREAL *distance; /*distance */
+  
+  iREAL *t[6][3]; /* triangles */
+  
   iREAL *p[3],*q[3];//p and q points
   
   unsigned int nt = 0; /* number of triangles */
   unsigned int *pid; /*particle identifier */
   unsigned int *tid; /* triangle identifiers */
   master_conpnt *con = 0; slave_conpnt *slave = 0;
+  
   iREAL lo[3] = {-500, -500, -500}; /* lower corner */
   iREAL hi[3] = {500, 500, 500}; /* upper corner */
   
@@ -87,9 +85,12 @@ int main (int argc, char **argv)
 		t[0][i] = (iREAL *) malloc (size*sizeof(iREAL));
 		t[1][i] = (iREAL *) malloc (size*sizeof(iREAL));
 		t[2][i] = (iREAL *) malloc (size*sizeof(iREAL));
-		v[i] = (iREAL *) malloc (size*sizeof(iREAL));
+		t[3][i] = (iREAL *) malloc (size*sizeof(iREAL));
+		t[4][i] = (iREAL *) malloc (size*sizeof(iREAL));
+		t[5][i] = (iREAL *) malloc (size*sizeof(iREAL));
+		
+    linear[i] = (iREAL *) malloc (size*sizeof(iREAL));
     
-    position[i] = (iREAL *) malloc (size*sizeof(iREAL)); 
     torque[i] = (iREAL *) malloc (size*sizeof(iREAL));
     force[i] = (iREAL *) malloc (size*sizeof(iREAL));
 
@@ -100,6 +101,7 @@ int main (int argc, char **argv)
 	for (int i = 0; i < 6; i++)
 	{
 		angular[i] = (iREAL *) malloc (size*sizeof(iREAL));
+    position[i] = (iREAL *) malloc (size*sizeof(iREAL)); 
 	}
  
   for (int i = 0; i<9; i++)
@@ -123,25 +125,30 @@ int main (int argc, char **argv)
 	for(unsigned int i=0;i<size;i++) tid[i] = UINT_MAX; 
 	
 	unsigned int nb;
-	init_enviroment(&nt, &nb, t, v, angular, inertia, inverse, mass, invm, parmat, tid, pid, position, lo, hi);  
+	init_enviroment(&nt, &nb, t, linear, angular, inertia, inverse, rotation, mass, invm, parmat, tid, pid, position, lo, hi);  
 	printf("NT:%i NB:%i\n", nt, nb);
-  
-  unsigned long long int ncontacts = 0;
   
   /* perform time stepping */
   iREAL step = 1E-3, time; unsigned int timesteps=0; 
   
-  for(time = 0; time < 0.1; time+=step)
+  euler(nb, angular, linear, rotation, position, 0.5*step);//half step
+  shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
+  output_state(nt, t, 0);
+  //printf("TC: %f %f %f\n", t[2][0][j], t[2][1][j], t[2][2][j]);
+   
+  for(time = 0; time < 1; time+=step)
   {
     printf("TIMESTEP: %i\n", timesteps); 
    
-    contact_detection (0, nt, 0, nt, t, tid, pid, v, step, p, q, con, &ncontacts);
+    contact_detection (0, nt, 0, nt, t, tid, pid, linear, step, p, q, con);
 		 
-    forces(con, slave, nt, position, angular, v, mass, invm, parmat, mparam, pairnum, pairs, ikind, iparam);
+    forces(con, slave, nb, position, angular, linear, mass, invm, parmat, mparam, pairnum, pairs, ikind, iparam);
   
-    dynamics(con, slave, nt, angular, v, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
+    dynamics(con, slave, nb, angular, linear, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
     
-    output_state(nt, t, v, timesteps);
+    shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
+
+    output_state(nt, t, timesteps);
     
     timesteps++;
   }
@@ -152,7 +159,7 @@ int main (int argc, char **argv)
     free (t[0][i]);
     free (t[1][i]);
     free (t[2][i]);
-    free (v[i]);
+    free (linear[i]);
     free (p[i]);
     free (q[i]);
   }

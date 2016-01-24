@@ -9,9 +9,9 @@
 #include <iomanip>
 
 // invert inertia properties 
-void invert (int nt, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
+void invert (int nb, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
 {
-  for(int i = 0; i<nt;i++)
+  for(int i = 0; i<nb;i++)
   {
     iREAL a[9], x[9], det;
 
@@ -30,7 +30,7 @@ void invert (int nt, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL
   }
 }
 
-void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL *centroid[3])
+void getCentroid(int pid, unsigned int range1, unsigned int range2, iREAL *t[6][3], iREAL *centroid[6])
 {
   iREAL cx=0;
   iREAL cy=0;
@@ -38,89 +38,114 @@ void getCentroid(unsigned int range1, unsigned int range2, iREAL *t[3][3], iREAL
 
   for(unsigned int i=range1;i<range2;i++)
   {
-    for(int j=0;j<3;j++)
-    {
-      cx = cx+t[0][j][i];
-      cy = cy+t[1][j][i];
-      cz = cz+t[2][j][i];
-    }
+    cx = cx+t[0][0][i];
+    cy = cy+t[0][1][i];
+    cz = cz+t[0][2][i];
+    
+    cx = cx+t[1][0][i];
+    cy = cy+t[1][1][i];
+    cz = cz+t[1][2][i];
+    
+    cx = cx+t[2][0][i];
+    cy = cy+t[2][1][i];
+    cz = cz+t[2][2][i];
   }
 
   cx = cx/((range2-range1)*3);
   cy = cy/((range2-range1)*3);
   cz = cz/((range2-range1)*3);
-  for(unsigned int i=range1;i<range2;i++)
-  {
-    centroid[0][i] = cx;
-    centroid[1][i] = cy;
-    centroid[2][i] = cz;
-  }
+    
+  centroid[0][pid] = cx;
+  centroid[1][pid] = cy;
+  centroid[2][pid] = cz;
+  
+  centroid[3][pid] = cx;
+  centroid[4][pid] = cy;
+  centroid[5][pid] = cz;
 }
 
-
-void translate_enviroment(unsigned int tid, iREAL *t[3][3], iREAL p[3])
+void translate_enviroment(unsigned int i, unsigned int pid, iREAL *t[6][3], iREAL *p[6])
 {
-  t[0][0][tid] = t[0][0][tid] + p[0];
-  t[0][1][tid] = t[0][1][tid] + p[1];
-  t[0][2][tid] = t[0][2][tid] + p[2];
+  t[0][0][i] = t[0][0][i] + p[0][pid];
+  t[0][1][i] = t[0][1][i] + p[1][pid];
+  t[0][2][i] = t[0][2][i] + p[2][pid];
 
-  t[1][0][tid] = t[1][0][tid] + p[0];
-  t[1][1][tid] = t[1][1][tid] + p[1];
-  t[1][2][tid] = t[1][2][tid] + p[2];
+  t[1][0][i] = t[1][0][i] + p[0][pid];
+  t[1][1][i] = t[1][1][i] + p[1][pid];
+  t[1][2][i] = t[1][2][i] + p[2][pid];
 
-  t[2][0][tid] = t[2][0][tid] + p[0];
-  t[2][1][tid] = t[2][1][tid] + p[1];
-  t[2][2][tid] = t[2][2][tid] + p[2];
+  t[2][0][i] = t[2][0][i] + p[0][pid];
+  t[2][1][i] = t[2][1][i] + p[1][pid];
+  t[2][2][i] = t[2][2][i] + p[2][pid];
+  
+  t[3][0][i] = t[3][0][i] + p[0][pid];
+  t[3][1][i] = t[3][1][i] + p[1][pid];
+  t[3][2][i] = t[3][2][i] + p[2][pid];
+
+  t[4][0][i] = t[4][0][i] + p[0][pid];
+  t[4][1][i] = t[4][1][i] + p[1][pid];
+  t[4][2][i] = t[4][2][i] + p[2][pid];
+
+  t[5][0][i] = t[5][0][i] + p[0][pid];
+  t[5][1][i] = t[5][1][i] + p[1][pid];
+  t[5][2][i] = t[5][2][i] + p[2][pid];
 }
 
-void condition_enviroment(unsigned int nt, unsigned int nb, iREAL *v[3], iREAL *angular[6], 
-                        iREAL *mass, iREAL *inertia[9], iREAL *inverse[9], iREAL *invm, int *parmat, unsigned int pid[])
+void condition_enviroment(unsigned int nb, iREAL *v[3], iREAL *angular[6], iREAL *rotation[9],
+                        iREAL *mass, iREAL *inertia[9], iREAL *inverse[9], iREAL *invm, int *parmat)
 {
-  unsigned int counter=0;
-  for(unsigned int j = 0; j < nb; j++)
+  for(unsigned int i = 0; i < nb; i++)
   {
     iREAL rand = drand48();//random pull velocity
-    for(unsigned int i = counter; i < nt; i++)
-    {
-      if(pid[i] == j)
-      {
-        v[0][i] = 250 * rand;
-        v[1][i] = 0;
-        v[2][i] = 0;
+    v[0][i] = 500 * rand;
+    v[1][i] = 0;
+    v[2][i] = 0;
 
-        angular[0][i] = 0;
-        angular[1][i] = 0;
-        angular[2][i] = 0;
-        angular[3][i] = 0;
-        angular[4][i] = 0;
-        angular[5][i] = 0;
-        
-        mass[i] = 1;
-        parmat[i] = 1;
+    angular[0][i] = 500 * rand;
+    angular[1][i] = 0;
+    angular[2][i] = 0;
+    angular[3][i] = 500 * rand;
+    angular[4][i] = 0;
+    angular[5][i] = 0;
+    
+    mass[i] = 1E-1;
+    parmat[i] = 0;
 
-        inertia[0][i] = 1;
-        inertia[1][i] = 1;
-        inertia[2][i] = 1;
-        inertia[3][i] = 1;
-        inertia[4][i] = 1;
-        inertia[5][i] = 1;
-        inertia[6][i] = 1;
-        inertia[7][i] = 1;
-        inertia[8][i] = 1;
-        counter++;
-      } else
-      {
-        break;
-      }
-    }
+    inertia[0][i] = 1;
+    inertia[1][i] = 1;
+    inertia[2][i] = 1;
+    inertia[3][i] = 1;
+    inertia[4][i] = 1;
+    inertia[5][i] = 1;
+    inertia[6][i] = 1;
+    inertia[7][i] = 1;
+    inertia[8][i] = 1;
+
+    rotation[0][i] = 1;
+    rotation[1][i] = 0;
+    rotation[2][i] = 0;
+    rotation[3][i] = 0;
+    rotation[4][i] = 1;
+    rotation[5][i] = 0;
+    rotation[6][i] = 0;
+    rotation[7][i] = 0;
+    rotation[8][i] = 1;
+  
+    //double volume = (4./3.)*M_PI*rad*rad*rad;
+
+    //mass[i] = volume*mparam[DENSITY][material];
+
+    //inertia[0][i] = inertia[4][i] = inertia[8][i] = 0.4*mass[i]*radii[0][j]*radii[0][j];
+    //inertia[1][i] = inertia[2][i] = inertia[3][i] =
+    //inertia[5][i] = inertia[6][i] = inertia[7][i] = 0.0;
   }
 
-  invert (nt, inertia, inverse, mass, invm);
+  invert (nb, inertia, inverse, mass, invm);
 }
 
 void init_enviroment(unsigned int *nt, unsigned int *nb, 
-                    iREAL *t[3][3], iREAL *v[3], iREAL *angular[6], iREAL *inertia[9], iREAL *inverse[9], 
-                    iREAL *mass, iREAL *invm, int *parmat, unsigned int tid[], unsigned int pid[], iREAL *position[3], iREAL lo[3], iREAL hi[3])
+                    iREAL *t[6][3], iREAL *v[3], iREAL *angular[6], iREAL *inertia[9], iREAL *inverse[9], iREAL *rotation[9], 
+                    iREAL *mass, iREAL *invm, int *parmat, unsigned int tid[], unsigned int pid[], iREAL *position[6], iREAL lo[3], iREAL hi[3])
 {
   //Input Type
   //0: Triangulated Mesh
@@ -147,7 +172,7 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
   
   iREAL mint, maxt;
   load_enviroment(ptype, nt, *nb, t, tid, pid, position, &mint, &maxt);
- // iREAL velo[3] = {50, 50, 50};
+  
   lo[0] = -250; // lower corner
   lo[1] = -250; // lower corner
   lo[2] = -250; // lower corner
@@ -156,9 +181,6 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
   hi[1] = 250; // upper corner
   hi[2] = 250; // upper corner
   
-  //gen_velocities(lo, velo, *nt, v);
-  
-  iREAL p[3];//position to be translated
   int radius = 10;
 
   unsigned int counter = 0;
@@ -169,31 +191,38 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
     {
       for(int kk = lo[2]; kk < hi[2]; kk=kk+radius)
       {
-        if(idx < *nb)
+        position[0][idx] = ii+(radius/2);
+        position[1][idx] = jj+(radius/2);
+        position[2][idx] = kk+(radius/2);
+        
+        position[3][idx] = ii+(radius/2);
+        position[4][idx] = jj+(radius/2);
+        position[5][idx] = kk+(radius/2);
+        
+        //compute position to translate
+        for(unsigned int j = 0; j < *nt; j++)
         {
-          //computer position to translate
-          for(unsigned int j = counter; j < *nt; j++)
+          if(pid[j] == idx)
           {
-            if(pid[j] == idx)
-            {
-              p[0] = ii+(radius/2);
-              p[1] = jj+(radius/2);
-              p[2] = kk+(radius/2);
-              translate_enviroment(j, t, p);
-              counter++;
-            }
+            translate_enviroment(j, idx, t, position);
+            //counter++;
+            //printf("%i\n", j); 
           }
-          idx++;
         }
+        idx++;
+        if(idx > *nb) break;
+        printf("C:%i\n", idx);
       }
+      if(idx > *nb) break;
     }
+    if(idx > *nb) break;
   }
 
-  condition_enviroment(*nt, *nb, v, angular, mass, inertia, inverse, invm, parmat, pid);
+  condition_enviroment(*nb, v, angular, rotation, mass, inertia, inverse, invm, parmat);
 }
 
 void load_enviroment(int ptype[], unsigned int *nt, unsigned int nParticles, 
-                    iREAL *t[3][3], unsigned int tid[], unsigned int pid[], iREAL *position[3], iREAL *mint, iREAL *maxt)
+                    iREAL *t[6][3], unsigned int tid[], unsigned int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
 {
   unsigned int n = 0;
   *nt = 0;
@@ -214,7 +243,7 @@ void load_enviroment(int ptype[], unsigned int *nt, unsigned int nParticles,
 }
 
 void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, unsigned int *nt, unsigned int bodyidx, unsigned int initidx, 
-                              iREAL *t[3][3], unsigned int tid[], unsigned int pid[], iREAL *position[3], iREAL *mint, iREAL *maxt)
+                              iREAL *t[6][3], unsigned int tid[], unsigned int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
 {
   iREAL v[100][3];
   for(int i = 0; i<pointsize; i++)
@@ -367,26 +396,45 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, unsigned i
   counter = 0;
   for(unsigned int i=initidx;i<initidx+n;i++)
   {
+    //SPATIAL POINT A
     t[0][0][i] = point[0][counter];
     t[0][1][i] = point[1][counter];
     t[0][2][i] = point[2][counter];
-    
+  
+    //REFERENTIAL POINT A
+    t[3][0][i] = point[0][counter];
+    t[3][1][i] = point[1][counter];
+    t[3][2][i] = point[2][counter];
+
     counter++;
+    //SPATIAL POINT B
     t[1][0][i] = point[0][counter];
     t[1][1][i] = point[1][counter];
     t[1][2][i] = point[2][counter];
     
+    //REFENTIAL POINT B
+    t[4][0][i] = point[0][counter];
+    t[4][1][i] = point[1][counter];
+    t[4][2][i] = point[2][counter];
+
     counter++;
+    //SPATIAL POINT C
     t[2][0][i] = point[0][counter];
     t[2][1][i] = point[1][counter];
     t[2][2][i] = point[2][counter];
+    
+    //SPATIAL POINT C
+    t[5][0][i] = point[0][counter];
+    t[5][1][i] = point[1][counter];
+    t[5][2][i] = point[2][counter];
+    
     counter++;
     
     tid[i] = i;
     pid[i] = bodyidx;
   }
   
-  getCentroid(initidx, initidx+n, t, position);
+  //getCentroid(bodyidx, initidx, initidx+n, t, position);
   
   *mint = min;
   *maxt = max;
@@ -394,7 +442,7 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, unsigned i
 
 
 void load_points(int ptype, unsigned int *nt, unsigned int bodyID, unsigned int startIDX, 
-                iREAL *t[3][3], unsigned int tid[], unsigned int pid[], iREAL *position[3], iREAL *mint, iREAL *maxt)
+                iREAL *t[6][3], unsigned int tid[], unsigned int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
 {
   //////////VTK format////////////
 
@@ -540,7 +588,7 @@ void load_points(int ptype, unsigned int *nt, unsigned int bodyID, unsigned int 
               tid[i] = i;
               pid[i] = bodyID;
           }
-          getCentroid(startIDX, startIDX+n, t, position);
+          //getCentroid(bodyID, startIDX, startIDX+n, t, position);
       }
   } while (ch != EOF);
   *mint = min;
@@ -548,7 +596,7 @@ void load_points(int ptype, unsigned int *nt, unsigned int bodyID, unsigned int 
   fclose(fp1);
 }
 
-void normalize(unsigned int nt, iREAL *t[3][3], iREAL mint, iREAL maxt) 
+void normalize(unsigned int nt, iREAL *t[6][3], iREAL mint, iREAL maxt) 
 {  
   //range -255 to 255
   iREAL inv_range = 510.0/(maxt-mint);
