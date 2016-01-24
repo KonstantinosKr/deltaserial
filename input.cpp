@@ -98,28 +98,29 @@ void condition_enviroment(unsigned int nb, iREAL *v[3], iREAL *angular[6], iREAL
   {
     iREAL rand = drand48();//random pull velocity
     v[0][i] = 500 * rand;
-    v[1][i] = 0;
-    v[2][i] = 0;
-
-    angular[0][i] = 500 * rand;
+    v[1][i] = 0;//500 * rand;
+    v[2][i] = 0;//500 * rand;
+    
+    iREAL randomrot = 5 *rand;
+    angular[0][i] = randomrot;
     angular[1][i] = 0;
     angular[2][i] = 0;
-    angular[3][i] = 500 * rand;
+    angular[3][i] = 0; 
     angular[4][i] = 0;
     angular[5][i] = 0;
     
-    mass[i] = 1E-1;
+    mass[i] = 1E-3;
     parmat[i] = 0;
 
-    inertia[0][i] = 1;
-    inertia[1][i] = 1;
-    inertia[2][i] = 1;
-    inertia[3][i] = 1;
-    inertia[4][i] = 1;
-    inertia[5][i] = 1;
-    inertia[6][i] = 1;
-    inertia[7][i] = 1;
-    inertia[8][i] = 1;
+    inertia[0][i] = 0.4*mass[i];
+    inertia[1][i] = 0;
+    inertia[2][i] = 0;
+    inertia[3][i] = 0;
+    inertia[4][i] = 0.4*mass[i];
+    inertia[5][i] = 0;
+    inertia[6][i] = 0;
+    inertia[7][i] = 0;
+    inertia[8][i] = 0.4*mass[i];
 
     rotation[0][i] = 1;
     rotation[1][i] = 0;
@@ -166,7 +167,7 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
    
    
   //non-spherical particles generation and loading
-  *nb = 50;
+  *nb = 10;
   int ptype[*nb];
   for(unsigned int i = 0; i < *nb; i++){ptype[i] = 6;}
   
@@ -183,7 +184,6 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
   
   int radius = 10;
 
-  unsigned int counter = 0;
   unsigned int idx = 0;
   for(int ii = lo[0]; ii < hi[0]; ii=ii+radius)
   {
@@ -205,13 +205,10 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
           if(pid[j] == idx)
           {
             translate_enviroment(j, idx, t, position);
-            //counter++;
-            //printf("%i\n", j); 
           }
         }
         idx++;
         if(idx > *nb) break;
-        printf("C:%i\n", idx);
       }
       if(idx > *nb) break;
     }
@@ -434,7 +431,7 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, unsigned i
     pid[i] = bodyidx;
   }
   
-  //getCentroid(bodyidx, initidx, initidx+n, t, position);
+  getCentroid(bodyidx, initidx, initidx+n, t, position);
   
   *mint = min;
   *maxt = max;
@@ -588,7 +585,7 @@ void load_points(int ptype, unsigned int *nt, unsigned int bodyID, unsigned int 
               tid[i] = i;
               pid[i] = bodyID;
           }
-          //getCentroid(bodyID, startIDX, startIDX+n, t, position);
+          getCentroid(bodyID, startIDX, startIDX+n, t, position);
       }
   } while (ch != EOF);
   *mint = min;

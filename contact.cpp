@@ -78,8 +78,8 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
     
     ispc_bf (s2, e2, a, b, c, t[0], t[1], t[2], p, q);//use tasks 
      
-    iREAL marginT1 = 1E-3*dt;
-    iREAL marginT2 = 1E-3*dt;
+    iREAL marginT1 = 1E-3;
+    iREAL marginT2 = 1E-3;
     iREAL margin = marginT1+marginT2;
     
     master_conpnt * conpiv = &con[pid[i]];   
@@ -89,7 +89,6 @@ void contact_detection (unsigned int s1, unsigned int e1, unsigned int s2, unsig
       {
         int index = 0;
         index = iter->slave[0][j];
-
         iREAL dist = sqrt(pow((q[0][index]-p[0][index]),2)+pow((q[1][index]-p[1][index]),2)+pow((q[2][index]-p[1][index]),2));
         iREAL midpt[3];
         midpt[0] = (p[0][index]+q[0][index])/2; //x

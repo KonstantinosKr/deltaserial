@@ -196,6 +196,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     angular[0][i] = O[0];
     angular[1][i] = O[1];
     angular[2][i] = O[2];
+    
     angular[3][i] = o[0];
     angular[4][i] = o[1];
     angular[5][i] = o[2];
@@ -206,7 +207,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
   }
 }
 
-void shapes (int nb, unsigned int nt, iREAL lo[3], iREAL hi[3], unsigned int pid[], iREAL * t[6][3], iREAL *v[3], iREAL * rotation[9], iREAL * position[6])
+void shapes (int nb, unsigned int nt, iREAL lo[3], iREAL hi[3], unsigned int pid[], iREAL * t[6][3], iREAL * rotation[9], iREAL * position[6])
 {
   for (unsigned int i = 0; i<nt; i++)
   {

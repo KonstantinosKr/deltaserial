@@ -1,5 +1,5 @@
 #include "forces.h"
-
+#include "stdio.h"
 
 /*
  *
@@ -19,7 +19,7 @@ int granular_force(iREAL n[3], iREAL vij[3], iREAL oij[3], iREAL depth, int i, i
   iREAL en = iparam[DAMPER][ij] * 2.0 * sqrt(kn*ma);
   iREAL vn = DOT(vij,n);
   iREAL fn = kn*depth + en*vn;
- 
+  printf("CONTACT\n"); 
   f[0] = fn*n[0];
   f[1] = fn*n[1];
   f[2] = fn*n[2];
@@ -188,7 +188,6 @@ void forces (master_conpnt master[], slave_conpnt slave[],
 
       con->size -= ngone; //reduce size of contact points to size-removed/gone
     }
-    
     
     master_conpnt * con = master[i].next; //may be con = master[i] instead of master[i].next
     while (con && con->next) // delete empty items

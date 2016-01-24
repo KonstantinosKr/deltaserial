@@ -36,7 +36,7 @@ int main (int argc, char **argv)
   }
 
   //GRANULAR interaction type parameters 
-  iparam[SPRING][GRANULAR] = 1;
+  iparam[SPRING][GRANULAR] = 1E6;
   iparam[DAMPER][GRANULAR] = 1;
   iparam[FRISTAT][GRANULAR] = 0;
   iparam[FRIDYN][GRANULAR] = 0;
@@ -63,7 +63,7 @@ int main (int argc, char **argv)
  
   iREAL gravity[3];
   gravity[0] = 0;
-  gravity[1] = 0;
+  gravity[1] = 100;
   gravity[2] = 0;
   
   iREAL *t[6][3]; /* triangles */
@@ -129,14 +129,13 @@ int main (int argc, char **argv)
 	printf("NT:%i NB:%i\n", nt, nb);
   
   /* perform time stepping */
-  iREAL step = 1E-3, time; unsigned int timesteps=0; 
+  iREAL step = 1E-3, time; unsigned int timesteps=1; 
   
   euler(nb, angular, linear, rotation, position, 0.5*step);//half step
-  shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
+  shapes (nb, nt, lo, hi, pid, t, rotation, position);
   output_state(nt, t, 0);
-  //printf("TC: %f %f %f\n", t[2][0][j], t[2][1][j], t[2][2][j]);
    
-  for(time = 0; time < 1; time+=step)
+  for(time = 1E-3; time < 1; time+=step)
   {
     printf("TIMESTEP: %i\n", timesteps); 
    
@@ -146,7 +145,7 @@ int main (int argc, char **argv)
   
     dynamics(con, slave, nb, angular, linear, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
     
-    shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
+    shapes (nb, nt, lo, hi, pid, t, rotation, position);
 
     output_state(nt, t, timesteps);
     
