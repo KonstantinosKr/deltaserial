@@ -139,7 +139,7 @@ int main (int argc, char **argv)
   {
     printf("TIMESTEP: %i\n", timesteps); 
    
-    contact_detection (0, nt, 0, nt, t, tid, pid, linear, step, p, q, con);
+    contact_detection (0, nt, 0, nt, t, tid, pid, linear, p, q, con);
 		 
     forces(con, slave, nb, position, angular, linear, mass, invm, parmat, mparam, pairnum, pairs, ikind, iparam);
   
