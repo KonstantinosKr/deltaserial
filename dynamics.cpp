@@ -12,6 +12,42 @@ void gen_velocities (iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * v[3])
     }
 }
 
+iREAL critical (int nt, iREAL mass[], int pairnum, iREAL * iparam[NINT])
+{
+  iREAL kmax, emax, mmin, omax, step;
+  iREAL k, e, m;
+   
+  k = 0.0;
+  e = 0.0; 
+  
+  for (int i = 0; i<pairnum; i++)
+  {
+    if(iparam[SPRING][i] > k)
+      k = iparam[SPRING][i];
+    if(iparam[DAMPER][i] > e)
+      e = iparam[DAMPER][i];
+  }
+   
+  kmax = k;
+  emax = e;
+  
+  m = 1E99;
+   
+  for(int i = 0; i<nt; i++)
+  {
+    if(mass[i] > m)
+      m = mass[i];
+  }
+  
+  mmin = m;
+   
+  omax = sqrt (kmax/mmin);
+   
+  /* http://www.dynasupport.com/tutorial/ls-dyna-users-guide/time-integration */
+  step  = (2.0/omax)*(sqrt(1.0+emax*emax) - emax); 
+  return step;
+}
+
 // dynamics task 
 void dynamics (master_conpnt master[], slave_conpnt slave[],
   int nb, iREAL * angular[6], iREAL * linear[3],
@@ -21,30 +57,6 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
   iREAL * torque[3], iREAL gravity[3], iREAL step)
 {
   iREAL half = 0.5*step;
- 
-  /* symmetrical copy into slave contact points */
-  for(int i = 0; i<nb;i++)
-  {
-    for (master_conpnt * con = &master[i]; con; con = con->next)
-    {
-      for (int j = 0; j < con->size; j ++)
-      {
-        slave_conpnt *ptr;
-        int k=0;
-
-        ptr = newcon (&slave[con->slave[0][j]], &k);
-
-        ptr->master[0][k] = i;
-        ptr->master[1][k] = con->master[j];
-        ptr->point[0][k] = con->point[0][j];
-        ptr->point[1][k] = con->point[1][j];
-        ptr->point[2][k] = con->point[2][j];
-        ptr->force[0][k] = -con->force[0][j];
-        ptr->force[1][k] = -con->force[1][j];
-        ptr->force[2][k] = -con->force[2][j];
-      }
-    }
-  }
 
   for (int i = 0; i < nb; i ++) // force accumulation
   {
@@ -98,6 +110,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     force[1][i] = fs[1] + ma * gravity[1];
     force[2][i] = fs[2] + ma * gravity[2];
 
+    printf("Total Force of body: %i is: %f %f %f\n", i, force[0][i], force[1][i], force[2][i]);
     torque[0][i] = ts[0];
     torque[1][i] = ts[1];
     torque[2][i] = ts[2];

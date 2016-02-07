@@ -97,20 +97,36 @@ void condition_enviroment(unsigned int nb, iREAL *v[3], iREAL *angular[6], iREAL
   for(unsigned int i = 0; i < nb; i++)
   {
     iREAL rand = drand48();//random pull velocity
-    v[0][i] = 500 * rand;
-    v[1][i] = 500 * rand;
-    v[2][i] = 500 * rand;
     
+    //v[0][i] = 500 * rand;
+    //v[1][i] = 500 * rand;
+    //v[2][i] = 500 * rand;
+    if(i == 0)
+    {
+      v[0][i] = 0;
+      v[1][i] = 0;
+      v[2][i] = 100;
+    }else
+    {
+      v[0][i] = 0;
+      v[1][i] = 0;
+      v[2][i] = 0;
+    }
+
     iREAL randomrot = 5 *rand;
-    angular[0][i] = randomrot;
+    angular[0][i] = 0;
     angular[1][i] = 0;
     angular[2][i] = 0;
     angular[3][i] = 0; 
     angular[4][i] = 0;
     angular[5][i] = 0;
-    
-    mass[i] = 1E-3;
+   
+    mass[i] = 0.5;
     parmat[i] = 0;
+    
+    //double volume = (4./3.)*M_PI*rad*rad*rad;
+
+    //mass[i] = volume*mparam[DENSITY][material];
 
     inertia[0][i] = 0.4*mass[i];
     inertia[1][i] = 0;
@@ -131,16 +147,7 @@ void condition_enviroment(unsigned int nb, iREAL *v[3], iREAL *angular[6], iREAL
     rotation[6][i] = 0;
     rotation[7][i] = 0;
     rotation[8][i] = 1;
-  
-    //double volume = (4./3.)*M_PI*rad*rad*rad;
-
-    //mass[i] = volume*mparam[DENSITY][material];
-
-    //inertia[0][i] = inertia[4][i] = inertia[8][i] = 0.4*mass[i]*radii[0][j]*radii[0][j];
-    //inertia[1][i] = inertia[2][i] = inertia[3][i] =
-    //inertia[5][i] = inertia[6][i] = inertia[7][i] = 0.0;
   }
-
   invert (nb, inertia, inverse, mass, invm);
 }
 
@@ -167,7 +174,7 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
    
    
   //non-spherical particles generation and loading
-  *nb = 150;
+  *nb = 2;
   int ptype[*nb];
   for(unsigned int i = 0; i < *nb; i++){ptype[i] = 6;}
   
@@ -184,7 +191,7 @@ void init_enviroment(unsigned int *nt, unsigned int *nb,
   
   int radius = 10;
 
-  unsigned int idx = 0;
+  unsigned int idx = 0; lo[0] =0; lo[1] = 0; lo[2] = 0;
   for(int ii = lo[0]; ii < hi[0]; ii=ii+radius)
   {
     for(int jj = lo[1]; jj < hi[1]; jj=jj+radius)
@@ -232,7 +239,7 @@ void load_enviroment(int ptype[], unsigned int *nt, unsigned int nParticles,
     } else
     {//create point cloud and do delaunay hull triangulation
         //0.25 eps is the roundness degree, 5 is the radius, 50 are the point of the point cloud
-        gen_nonsphericalparticle(0.25, 5, 50, &n, i, *nt, t, tid, pid, position, mint, maxt);
+        gen_nonsphericalparticle(0.25, 2.5, 50, &n, i, *nt, t, tid, pid, position, mint, maxt);
     }
     *nt = n + *nt;
     n = 0;

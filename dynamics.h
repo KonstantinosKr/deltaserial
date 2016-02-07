@@ -2,6 +2,9 @@
 #include "contact.h"
 #include "algo.h"
 #include "math.h"
+#include "material.h"
+
+iREAL critical (int nt, iREAL mass[], int pairnum, iREAL * iparam[NINT]);
 
 void gen_velocities (iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * v[3]);
 void integrate (iREAL step, iREAL lo[3], iREAL hi[3], unsigned int nt, iREAL * t[3][3], iREAL * v[3]);

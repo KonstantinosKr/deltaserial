@@ -36,8 +36,8 @@ int main (int argc, char **argv)
   }
 
   //GRANULAR interaction type parameters 
-  iparam[SPRING][GRANULAR] = 1E6;
-  iparam[DAMPER][GRANULAR] = 1;
+  iparam[SPRING][GRANULAR] = 1E4;
+  iparam[DAMPER][GRANULAR] = 1E2;
   iparam[FRISTAT][GRANULAR] = 0;
   iparam[FRIDYN][GRANULAR] = 0;
   iparam[FRIROL][GRANULAR] = 0;
@@ -63,7 +63,7 @@ int main (int argc, char **argv)
  
   iREAL gravity[3];
   gravity[0] = 0;
-  gravity[1] = 100;
+  gravity[1] = 0;
   gravity[2] = 0;
   
   iREAL *t[6][3]; /* triangles */
@@ -128,19 +128,24 @@ int main (int argc, char **argv)
 	init_enviroment(&nt, &nb, t, linear, angular, inertia, inverse, rotation, mass, invm, parmat, tid, pid, position, lo, hi);  
 	printf("NT:%i NB:%i\n", nt, nb);
   
+  
   /* perform time stepping */
-  iREAL step = 1E-3, time; unsigned int timesteps=1; 
+  iREAL step = 1E-4, time; unsigned int timesteps=1; 
+  
+  //step = critical (nt, mass, pairnum, iparam);
   
   euler(nb, angular, linear, rotation, position, 0.5*step);//half step
   shapes (nb, nt, lo, hi, pid, t, linear, rotation, position);
   output_state(nt, t, 0);
    
-  for(time = 1E-3; time < 1; time+=step)
+  for(time = 1E-4; time < 1; time+=step)
   {
     printf("TIMESTEP: %i\n", timesteps); 
    
     contact_detection (0, nt, 0, nt, t, tid, pid, linear, p, q, con);
-		 
+		
+    update_existing (nb, nt, con, t, tid, pid, p, q);
+    
     forces(con, slave, nb, position, angular, linear, mass, invm, parmat, mparam, pairnum, pairs, ikind, iparam);
   
     dynamics(con, slave, nb, angular, linear, rotation, position, inertia, inverse, mass, invm, force, torque, gravity, step);
