@@ -21,20 +21,18 @@ struct master_conpnt
   int size;
 
   struct master_conpnt * next; /* local list */
-  int lock; /* list update lock */
 };
 
 /* slave contact points; they are created by
  * symmetrically coppying master contact points */
 struct slave_conpnt
 {
-  int master[2][CONBUF]; /* particle, ellipsoid */
+  int master[2][CONBUF]; /* particle, triangle */
   iREAL point[3][CONBUF];
   iREAL force[3][CONBUF];
   int size;
 
   struct slave_conpnt * next; /* local list */
-  int lock; /* list update lock */
 };
 
 /* calculate distances */
