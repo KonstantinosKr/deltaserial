@@ -4,4 +4,4 @@
 #include <limits.h>
 #include <float.h>
 
-void output_state(unsigned int nt, iREAL *t[3][3], unsigned int timesteps);
+void output_state(int nt, iREAL *t[6][3], int timesteps);

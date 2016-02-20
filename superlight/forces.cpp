@@ -37,21 +37,18 @@ int pairing (int nummat, int pairs[], int i, int j)
   return 0; /* default material */
 }
 
-void forces (master_conpnt master[], slave_conpnt slave[], std::vector<contact> conpnt[],
-    int nb, iREAL * linear[3], iREAL mass[], int parmat[], iREAL * mparam[NMAT],
-    int pairnum, int pairs[], int ikind[], iREAL * iparam[NINT])
+void forces (std::vector<contact> conpnt[], int nb, iREAL * linear[3], iREAL mass[], int parmat[], iREAL * mparam[NMAT],
+              int pairnum, int pairs[], int ikind[], iREAL * iparam[NINT])
 {
-  for (int i = 0; i < nb; i++)
+  for(int i=0;i<nb;i++)
   {
-    iREAL v[3];
-
-    v[0] = linear[0][i];
-    v[1] = linear[1][i];
-    v[2] = linear[2][i];
-    
+    iREAL vi[3];
+    vi[0] = linear[0][i];
+    vi[1] = linear[1][i];
+    vi[2] = linear[2][i];
     for(unsigned int k = 0; k<conpnt[i].size(); k++)
     {  
-      iREAL p[3], n[3], vi[3], vj[3], vij[3];
+      iREAL p[3], n[3], vj[3], vij[3];
 
       p[0] = conpnt[i][k].point[0];
       p[1] = conpnt[i][k].point[1];
@@ -60,12 +57,6 @@ void forces (master_conpnt master[], slave_conpnt slave[], std::vector<contact> 
       n[0] = conpnt[i][k].normal[0];
       n[1] = conpnt[i][k].normal[1];
       n[2] = conpnt[i][k].normal[2];
-
-      int ii = conpnt[i][k].pid[0];
-      
-      vi[0] = linear[0][ii];
-      vi[1] = linear[1][ii];
-      vi[2] = linear[2][ii];
 
       int j = conpnt[i][k].pid[1]; //get index from slave body contact
 
@@ -89,12 +80,13 @@ void forces (master_conpnt master[], slave_conpnt slave[], std::vector<contact> 
           break;
       }
      
-      if(conpnt[i][k].pid[0] = i)
+      if(conpnt[i][k].pid[0] == i)
       {
         conpnt[i][k].force[0] = f[0];
         conpnt[i][k].force[1] = f[1];
         conpnt[i][k].force[2] = f[2];
-      }else
+      }
+      else
       {
         conpnt[i][k].force[0] = -f[0];
         conpnt[i][k].force[1] = -f[1];

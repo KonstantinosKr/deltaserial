@@ -41,7 +41,7 @@ clean:
 $(EXE): $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
 	$(CXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)
 
-objs/%_ispc.h objs/%_ispc.o : %.ispc
+objs/%_ispc.h objs/%_ispc.o: %.ispc
 	$(ISPC) --target=$(ISPC_TARGETS) $< -o objs/$*_ispc.o -h objs/$*_ispc.h
 
 objs/%.o: %.cpp $(ISPC_HEADERS)

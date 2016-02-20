@@ -9,7 +9,7 @@
 #include <iomanip>
 
 // invert inertia properties 
-void invert (int nb, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL invm[])
+void invert (int nb, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[])
 {
   for(int i = 0; i<nb;i++)
   {
@@ -19,15 +19,12 @@ void invert (int nb, iREAL * inertia[9], iREAL * inverse[9], iREAL mass[], iREAL
     {
       a[j] = inertia[j][i];
     }
-    
     INVERT (a, x, det);
 
     for (int j = 0; j < 9; j ++)
     {
       inverse[j][i] = x[j];
     }
-
-    invm[i] = 1.0 / mass[i];
   }
 }
 
@@ -92,8 +89,8 @@ void translate_enviroment(int i, int pid, iREAL *t[6][3], iREAL *p[6])
   t[5][2][i] = t[5][2][i] + p[2][pid];
 }
 
-void condition_enviroment(int nb, iREAL *v[3], iREAL *angular[6], iREAL *rotation[9],
-                        iREAL *mass, iREAL *inertia[9], iREAL *inverse[9], iREAL *invm, int *parmat)
+void condition_enviroment(int nb, iREAL *linear[3], iREAL *angular[6], iREAL *rotation[9],
+                        iREAL *mass, iREAL *inertia[9], iREAL *inverse[9], int *parmat)
 {
   for(int i = 0; i < nb; i++)
   {
@@ -104,14 +101,14 @@ void condition_enviroment(int nb, iREAL *v[3], iREAL *angular[6], iREAL *rotatio
     //v[2][i] = 500 * rand;
     if(i == 0)
     {
-      v[0][i] = 0;
-      v[1][i] = 0;
-      v[2][i] = 100;
+      linear[0][i] = 0;
+      linear[1][i] = 0;
+      linear[2][i] = 100;
     }else
     {
-      v[0][i] = 0;
-      v[1][i] = 0;
-      v[2][i] = 0;
+      linear[0][i] = 0;
+      linear[1][i] = 0;
+      linear[2][i] = 0;
     }
 
     //iREAL randomrot = 5 *rand;
@@ -122,22 +119,22 @@ void condition_enviroment(int nb, iREAL *v[3], iREAL *angular[6], iREAL *rotatio
     angular[4][i] = 0;
     angular[5][i] = 0;
    
-    mass[i] = 0.5;
+    mass[i] = 15;
     parmat[i] = 0;
     
     //double volume = (4./3.)*M_PI*rad*rad*rad;
 
     //mass[i] = volume*mparam[DENSITY][material];
 
-    inertia[0][i] = 0.4*mass[i];
+    inertia[0][i] = 15*mass[i];
     inertia[1][i] = 0;
     inertia[2][i] = 0;
     inertia[3][i] = 0;
-    inertia[4][i] = 0.4*mass[i];
+    inertia[4][i] = 15*mass[i];
     inertia[5][i] = 0;
     inertia[6][i] = 0;
     inertia[7][i] = 0;
-    inertia[8][i] = 0.4*mass[i];
+    inertia[8][i] = 15*mass[i];
 
     rotation[0][i] = 1;
     rotation[1][i] = 0;
@@ -149,38 +146,19 @@ void condition_enviroment(int nb, iREAL *v[3], iREAL *angular[6], iREAL *rotatio
     rotation[7][i] = 0;
     rotation[8][i] = 1;
   }
-  invert (nb, inertia, inverse, mass, invm);
+  invert (nb, inertia, inverse, mass);
 }
 
-void init_enviroment(int *nt, int *nb, 
-                    iREAL *t[6][3], iREAL *v[3], iREAL *angular[6], iREAL *inertia[9], iREAL *inverse[9], iREAL *rotation[9], 
-                    iREAL *mass, iREAL *invm, int *parmat, int tid[], int pid[], iREAL *position[6], iREAL lo[3], iREAL hi[3])
+void init_enviroment(int &nt, int &nb, iREAL *t[6][3], iREAL *linear[3], iREAL *angular[6], iREAL *inertia[9], iREAL *inverse[9], iREAL *rotation[9], iREAL *mass, int *parmat, int tid[], int pid[], iREAL *position[6], iREAL lo[3], iREAL hi[3])
 {
-  //Input Type
-  //0: Triangulated Mesh
-  //1: Particle
-  //2: Triangle
-  //3: Sphere
-  //4: Square
-  //5: Hexahedron
-  
     
-  //load non-spherical meshes from vtk files
-  /* *nParticles = 1000;
-  int ptype[*nParticles];
-  for(int i = 0; i < *nParticles; i++)
-  {
-    ptype[i] = 1;
-  }*/
-   
-   
   //non-spherical particles generation and loading
-  *nb = 2;
-  int ptype[*nb];
-  for(int i = 0; i < *nb; i++){ptype[i] = 6;}
+  nb = 2;
+  int ptype[nb];
+  for(int i = 0; i < nb; i++){ptype[i] = 0;}
   
   iREAL mint, maxt;
-  load_enviroment(ptype, nt, *nb, t, tid, pid, position, &mint, &maxt);
+  load_enviroment(ptype, nt, nb, t, tid, pid, position, &mint, &maxt);
   
   lo[0] = -250; // lower corner
   lo[1] = -250; // lower corner
@@ -208,7 +186,7 @@ void init_enviroment(int *nt, int *nb,
         position[5][idx] = kk+(radius/2);
         
         //compute position to translate
-        for(int j = 0; j < *nt; j++)
+        for(int j = 0; j < nt; j++)
         {
           if(pid[j] == idx)
           {
@@ -216,38 +194,45 @@ void init_enviroment(int *nt, int *nb,
           }
         }
         idx++;
-        if(idx > *nb) break;
+        if(idx > nb) break;
       }
-      if(idx > *nb) break;
+      if(idx > nb) break;
     }
-    if(idx > *nb) break;
+    if(idx > nb) break;
   }
 
-  condition_enviroment(*nb, v, angular, rotation, mass, inertia, inverse, invm, parmat);
+  condition_enviroment(nb, linear, angular, rotation, mass, inertia, inverse, parmat);
 }
 
-void load_enviroment(int ptype[], int *nt, int nParticles, 
-                    iREAL *t[6][3], int tid[], int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
+void load_enviroment(int ptype[], int &nt, int nb, iREAL *t[6][3], int tid[], int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
 {
   int n = 0;
-  *nt = 0;
+  nt = 0;
   srand48(time(NULL));
-  for(int i = 0; i < nParticles; i++)
+  for(int i = 0; i < nb; i++)
   {
-    if(ptype[i] != 6)
-    {//load particle from file
-        load_points(ptype[i], &n, i, *nt, t, tid, pid, position, mint, maxt);
-    } else
-    {//create point cloud and do delaunay hull triangulation
+    switch(ptype[i])
+    {
+      case 0:
+      {
+        printf("entered\n");
+        load_vtk(n, i, nt, t, tid, pid, position, mint, maxt);
+        break;
+      }
+      case 1:
+      {
+        //create point cloud and do delaunay hull triangulation
         //0.25 eps is the roundness degree, 5 is the radius, 50 are the point of the point cloud
-        gen_nonsphericalparticle(0.25, 2.5, 50, &n, i, *nt, t, tid, pid, position, mint, maxt);
+        nonsphericalparticle(0.25, 2.5, 50, n, i, nt, t, tid, pid, position, mint, maxt);
+        break;
+      }
     }
-    *nt = n + *nt;
+    nt = n + nt;
     n = 0;
   }
 }
 
-void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, int *nt, int bodyidx, int initidx, 
+void nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, int &nt, int nb, int idx, 
                               iREAL *t[6][3], int tid[], int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
 {
   iREAL v[100][3];
@@ -272,7 +257,7 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, int *nt, i
   for(TRI *tri = tr, *e = tri + pointlength; tri < e; tri ++){counter++;}
   
   int n = counter*3;
-  *nt = pointlength;
+  nt = pointlength;
   iREAL *point[3];
   
   point[0] = (iREAL *)malloc (n*sizeof(iREAL));
@@ -399,7 +384,7 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, int *nt, i
   }
   
   counter = 0;
-  for(int i=initidx;i<initidx+n;i++)
+  for(int i=idx;i<idx+n;i++)
   {
     //SPATIAL POINT A
     t[0][0][i] = point[0][counter];
@@ -436,66 +421,33 @@ void gen_nonsphericalparticle(iREAL eps, iREAL radius, int pointsize, int *nt, i
     counter++;
     
     tid[i] = i;
-    pid[i] = bodyidx;
+    pid[i] = nb;
   }
   
-  getCentroid(bodyidx, initidx, initidx+n, t, position);
+  getCentroid(nb, idx, idx+n, t, position);
   
   *mint = min;
   *maxt = max;
 }
 
 
-void load_points(int ptype, int *nt, int bodyID, int startIDX, 
-                iREAL *t[6][3], int tid[], int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
+void load_vtk(int &nt, int nb, int idx, iREAL *t[6][3], int tid[], int pid[], iREAL *position[6], iREAL *mint, iREAL *maxt)
 {
   //////////VTK format////////////
-
-  //Input Type
-  //0: Triangulated Mesh
-  //1: Particle
-  //2: Triangle
-  //3: Sphere
-  //4: Square
-  //5: Hexahedron
-  //6: point cloud 
   iREAL min = DBL_MAX;
   iREAL max = DBL_MIN;
   FILE *fp1;
-  if(ptype == 0)
-  {
-    char filename[100] = "input/mesh/mesh";
-    char strtmp[100];
-    sprintf(strtmp, "%i.vtk", bodyID);
-    strcat(filename, strtmp);
-    fp1 = fopen(filename, "r+");
-    printf("%s\n", filename);
-  } else if(ptype == 1)
-  {
-    char filename[100] = "input/particles/par_";
-    char strtmp[100];
-    sprintf(strtmp, "%i.vtk", bodyID);
-    strcat(filename, strtmp);
-    fp1 = fopen(filename, "r+");
-    printf("%s\n", filename);
-  } else if(ptype == 2)
-  {
-    fp1 = fopen("input/shapes/triangle.vtk", "r");
-  } else if(ptype == 3)
-  {
-    fp1 = fopen("input/shapes/sphere.vtk", "r");
-  } else if(ptype == 4)
-  {
-    fp1 = fopen("input/shapes/square.vtk", "r");
-  } else if(ptype == 5)
-  {
-    fp1 = fopen("input/shapes/hexahedron.vtk", "r");
-  }
+  char filename[100] = "input/mesh/mesh";
+  char strtmp[100];
+  sprintf(strtmp, "%i.vtk", nb);
+  strcat(filename, strtmp);
+  fp1 = fopen(filename, "r+");
+  printf("%s\n", filename);
 
   if( fp1 == NULL )
   {
-      perror("Error while opening the file.\n");
-      exit(EXIT_FAILURE);
+    perror("Error while opening the file.\n");
+    exit(EXIT_FAILURE);
   }
   
   char ch, word[500];
@@ -505,95 +457,110 @@ void load_points(int ptype, int *nt, int bodyID, int startIDX,
       ch = fscanf(fp1,"%s",word);
       if(strcmp(word, "POINTS")==0)
       {
-          printf("found!\n");
-          ch = fscanf(fp1,"%s",word);
-          unsigned int n = atol(word);
-          //get points
-          ch = fscanf(fp1,"%s",word);
-          //printf("will read: %llu\n",n); 
-          point[0] = (iREAL *)malloc (n*sizeof(iREAL));
-          point[1] = (iREAL *)malloc (n*sizeof(iREAL));
-          point[2] = (iREAL *)malloc (n*sizeof(iREAL));
+        printf("found!\n");
+        ch = fscanf(fp1,"%s",word);
+        int n = atol(word);
+        //get points
+        ch = fscanf(fp1,"%s",word);
+        //printf("will read: %llu\n",n); 
+        point[0] = (iREAL *)malloc (n*sizeof(iREAL));
+        point[1] = (iREAL *)malloc (n*sizeof(iREAL));
+        point[2] = (iREAL *)malloc (n*sizeof(iREAL));
+        
+        for(int i=0;i<n;i++)
+        {
+          fscanf(fp1, "%lf", &point[0][i]);
+          fscanf(fp1, "%lf", &point[1][i]);
+          fscanf(fp1, "%lf", &point[2][i]);
+          //printf("POINT[0] = %f | POINT[1] = %f | POINT[2] = %f\n", point[0][i], point[1][i], point[2][i]);
           
-          for(unsigned int i=0;i<n;i++)
+          if(point[0][i] < min) 
           {
-              fscanf(fp1, "%lf", &point[0][i]);
-              fscanf(fp1, "%lf", &point[1][i]);
-              fscanf(fp1, "%lf", &point[2][i]);
-              //printf("POINT[0] = %f | POINT[1] = %f | POINT[2] = %f\n", point[0][i], point[1][i], point[2][i]);
-              
-              if(point[0][i] < min) 
-              {
-                min = point[0][i];
-              }
-
-              if(point[1][i] < min) 
-              {
-                min = point[1][i];
-              }
-
-              if(point[2][i] < min)
-              {
-                min = point[2][i];
-              }
-
-              /////////////////////
-              
-              if(point[0][i] > max) 
-              {
-                max = point[0][i];
-              }
-
-              if(point[1][i] > max) 
-              {
-                max = point[1][i];
-              }
-
-              if(point[2][i] > max)
-              {
-                max = point[2][i];
-              }
+            min = point[0][i];
           }
+
+          if(point[1][i] < min) 
+          {
+            min = point[1][i];
+          }
+
+          if(point[2][i] < min)
+          {
+            min = point[2][i];
+          }
+
+          /////////////////////
+          
+          if(point[0][i] > max) 
+          {
+            max = point[0][i];
+          }
+
+          if(point[1][i] > max) 
+          {
+            max = point[1][i];
+          }
+
+          if(point[2][i] > max)
+          {
+            max = point[2][i];
+          }
+        }
       }
       if(strcmp(word, "CELLS")==0 || strcmp(word, "POLYGONS") == 0)
       { 
+        ch = fscanf(fp1,"%s",word);
+        int n = atol(word);
+        nt = n;
+        ch = fscanf(fp1,"%s",word);
+        printf(":::%u::\n",n);
+        for(int i=idx;i<idx+n;i++)
+        {
           ch = fscanf(fp1,"%s",word);
-          unsigned int n = atol(word);
-          *nt = n;
           ch = fscanf(fp1,"%s",word);
-          printf(":::%u::\n",n);
-          for(unsigned int i=startIDX;i<startIDX+n;i++)
-          {
-              ch = fscanf(fp1,"%s",word);
-              ch = fscanf(fp1,"%s",word);
-              
-              unsigned int index = atol(word);
-              t[0][0][i] = point[0][index];
-              t[0][1][i] = point[1][index];
-              t[0][2][i] = point[2][index];
-              
-              //printf("idx:%s T[0][0] = %f | T[0][1] = %f | T[0][2] = %f\n", word, t[0][0][i], t[0][1][i], t[0][2][i]);
-              
-              ch = fscanf(fp1,"%s",word);
-              index = atol(word);
-              t[1][0][i] = point[0][index];
-              t[1][1][i] = point[1][index];
-              t[1][2][i] = point[2][index];
-              
-              //printf("idx:%s T[1][0] = %f | T[1][1] = %f | T[1][2] = %f\n", word, t[1][0][i], t[1][1][i], t[1][2][i]);
-              
-              ch = fscanf(fp1,"%s",word);
-              index = atol(word);
-              t[2][0][i] = point[0][index];
-              t[2][1][i] = point[1][index];
-              t[2][2][i] = point[2][index];
-              
-              //printf("idx:%s T[2][0] = %f | T[2][1] = %f | T[2][2] = %f\n", word, t[2][0][i], t[2][1][i], t[2][2][i]);
-              
-              tid[i] = i;
-              pid[i] = bodyID;
-          }
-          getCentroid(bodyID, startIDX, startIDX+n, t, position);
+          
+          int index = atol(word);
+          t[0][0][i] = point[0][index];
+          t[0][1][i] = point[1][index];
+          t[0][2][i] = point[2][index];
+          
+          //printf("idx:%s T[0][0] = %f | T[0][1] = %f | T[0][2] = %f\n", word, t[0][0][i], t[0][1][i], t[0][2][i]);
+  
+          //REFERENTIAL POINT A
+          t[3][0][i] = point[0][index];
+          t[3][1][i] = point[1][index];
+          t[3][2][i] = point[2][index];
+
+          ch = fscanf(fp1,"%s",word);
+          index = atol(word);
+          t[1][0][i] = point[0][index];
+          t[1][1][i] = point[1][index];
+          t[1][2][i] = point[2][index];
+          
+          //printf("idx:%s T[1][0] = %f | T[1][1] = %f | T[1][2] = %f\n", word, t[1][0][i], t[1][1][i], t[1][2][i]);
+          
+          //REFENTIAL POINT B
+          t[4][0][i] = point[0][index];
+          t[4][1][i] = point[1][index];
+          t[4][2][i] = point[2][index];
+
+          ch = fscanf(fp1,"%s",word);
+          index = atol(word);
+          t[2][0][i] = point[0][index];
+          t[2][1][i] = point[1][index];
+          t[2][2][i] = point[2][index];
+          
+          //printf("idx:%s T[2][0] = %f | T[2][1] = %f | T[2][2] = %f\n", word, t[2][0][i], t[2][1][i], t[2][2][i]);
+          
+          //SPATIAL POINT C
+          t[5][0][i] = point[0][index];
+          t[5][1][i] = point[1][index];
+          t[5][2][i] = point[2][index];
+          
+          tid[i] = i;
+          pid[i] = nb;
+        }
+        getCentroid(nb, idx, idx+n, t, position);
       }
   } while (ch != EOF);
   *mint = min;

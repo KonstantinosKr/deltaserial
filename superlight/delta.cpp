@@ -66,8 +66,6 @@ int main (int argc, char **argv)
   int *pid; //particle identifier
   int *tid; // triangle identifiers
   
-  master_conpnt *con = 0; slave_conpnt *slave = 0;
-  
   iREAL lo[3] = {-500, -500, -500}; // lower corner
   iREAL hi[3] = {500, 500, 500}; // upper corner
   
@@ -87,10 +85,6 @@ int main (int argc, char **argv)
 		q[i] = (iREAL *) malloc (size*sizeof(iREAL));
     position[i] = (iREAL *) malloc (size*sizeof(iREAL)); 
   }
-
-
-  con = (master_conpnt *) malloc (size*sizeof(master_conpnt));
-  slave = (slave_conpnt *) malloc (size*sizeof(slave_conpnt));
 
   vector<contact> *conpnt = (vector<contact> *) malloc(size*sizeof(vector<contact>));
 
@@ -114,13 +108,13 @@ int main (int argc, char **argv)
    
     printf("BODY1 XVelocity:%f\n", linear[2][0]);
     printf("BODY2 XVelocity:%f\n", linear[2][1]);
-    contact_detection (0, nt, 0, nt, t, tid, pid, linear, p, q, con, conpnt);
+    contact_detection (0, nt, t, tid, pid, linear, p, q, conpnt);
     
-    forces(con, slave, conpnt, nb, position, linear, mass, parmat, mparam, pairnum, pairs, ikind, iparam);
+    forces(conpnt, nb, linear, mass, parmat, mparam, pairnum, pairs, ikind, iparam);
     
     printf("Forces derivation finished\n");
 
-    dynamics(con, slave, conpnt, nt, nb, t, pid, linear, position, mass, force, gravity, step);
+    dynamics(conpnt, nt, nb, t, pid, linear, position, mass, force, gravity, step);
    
     printf("Updated dynamics\n");
 

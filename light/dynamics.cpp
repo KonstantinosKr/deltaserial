@@ -38,74 +38,14 @@ iREAL critical (int nt, iREAL mass[], int pairnum, iREAL * iparam[NINT])
 }
 
 // dynamics task 
-void dynamics (master_conpnt master[], slave_conpnt slave[],
-  int nb, iREAL * angular[6], iREAL * linear[3],
-  iREAL * rotation[9], iREAL * position[6],
-  iREAL * inertia[9], iREAL * inverse[9],
-  iREAL mass[], iREAL invm[], iREAL * force[3],
-  iREAL * torque[3], iREAL gravity[3], iREAL step)
+void dynamics (std::vector<contact> conpnt[],
+  int nt, int nb, iREAL *t[6][3], int pid[], iREAL *angular[6], iREAL *linear[3],
+  iREAL *rotation[9], iREAL *position[6],
+  iREAL *inertia[9], iREAL *inverse[9],
+  iREAL mass[], iREAL *force[3],
+  iREAL *torque[3], iREAL step)
 {
-
-  for (int i = 0; i < nb; i++) // force accumulation
-  {
-    iREAL f[3], a[3], fs[3], ts[3];
-    iREAL po[3], ma;
-
-    po[0] = position[0][i];
-    po[1] = position[1][i];
-    po[2] = position[2][i];
-    
-    ma = mass[i];
-
-    SET (fs, 0.0);
-    SET (ts, 0.0);
-
-    for (master_conpnt * m = &master[i]; m; m = m->next)
-    {
-      for(int j = 0; j<m->size;j++)
-      {
-        f[0] = m->force[0][j];
-        f[1] = m->force[1][j];
-        f[2] = m->force[2][j];
-
-        a[0] = m->point[0][j]-po[0];
-        a[1] = m->point[1][j]-po[1];
-        a[2] = m->point[2][j]-po[2];
-
-        ACC (f, fs);
-        PRODUCTADD (a, f, ts);
-      }
-    }
-
-    for (slave_conpnt * s = &slave[i]; s; s = s->next)
-    {
-      for(int j = 0;j<s->size;j++)
-      {
-        f[0] = s->force[0][j];
-        f[1] = s->force[1][j];
-        f[2] = s->force[2][j];
-
-        a[0] = s->point[0][j]-po[0];
-        a[1] = s->point[1][j]-po[1];
-        a[2] = s->point[2][j]-po[2];
-
-        ACC (f, fs);
-        PRODUCTADD (a, f, ts);
-      }
-    }
-
-    force[0][i] = fs[0] + ma * gravity[0];
-    force[1][i] = fs[1] + ma * gravity[1];
-    force[2][i] = fs[2] + ma * gravity[2];
-
-    printf("Total Force of body: %i is: %f %f %f\n", i, force[0][i], force[1][i], force[2][i]);
-    torque[0][i] = ts[0];
-    torque[1][i] = ts[1];
-    torque[2][i] = ts[2];
-  
-    slave_free(&slave[i]);
-    master_free(&master[i]);
-  }
+  iREAL half = 0.5*step;
 
   for (int i = 0; i<nb; i++) // time integration 
   {
@@ -149,7 +89,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     I[7] = inverse[7][i];
     I[8] = inverse[8][i];
 
-    im = invm[i];
+    im = 1/mass[i];
 
     f[0] = force[0][i];
     f[1] = force[1][i];
@@ -158,10 +98,17 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     t[0] = torque[0][i];
     t[1] = torque[1][i];
     t[2] = torque[2][i];
+    
+    force[0][i] = 0.0;
+    force[1][i] = 0.0;
+    force[2][i] = 0.0;
 
+    torque[0][i] = 0.0;
+    torque[1][i] = 0.0;
+    torque[2][i] = 0.0;
+    
     TVMUL (L1, t, T);
-  
-    iREAL half = 0.5*step;
+
     expmap (-half*O[0], -half*O[1], -half*O[2], DL[0], DL[1], DL[2], DL[3], DL[4], DL[5], DL[6], DL[7], DL[8]);
 
     NVMUL (J, O, A);
@@ -210,10 +157,7 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
     linear[1][i] = v[1];
     linear[2][i] = v[2];
   }
-}
 
-void shapes (int nb, int nt, iREAL lo[3], iREAL hi[3], int pid[], iREAL * t[6][3], iREAL *v[3], iREAL * rotation[9], iREAL * position[6])
-{
   for (int i = 0; i<nt; i++)
   {
     iREAL L[9], X[3], x[3], C[3], c[3];
@@ -276,7 +220,7 @@ void shapes (int nb, int nt, iREAL lo[3], iREAL hi[3], int pid[], iREAL * t[6][3
     t[2][1][i] = c[1];
     t[2][2][i] = c[2];
     
-    if (t[0][0][i] < lo[0]) v[0][j] *= -1;
+/*    if (t[0][0][i] < lo[0]) v[0][j] *= -1;
     if (t[0][1][i] < lo[1]) v[1][j] *= -1;
     if (t[0][2][i] < lo[2]) v[2][j] *= -1;
     if (t[0][0][i] > hi[0]) v[0][j] *= -1;
@@ -296,9 +240,12 @@ void shapes (int nb, int nt, iREAL lo[3], iREAL hi[3], int pid[], iREAL * t[6][3
     if (t[2][0][i] > hi[0]) v[0][j] *= -1;
     if (t[2][1][i] > hi[1]) v[1][j] *= -1;
     if (t[2][2][i] > hi[2]) v[2][j] *= -1;
+ */ 
   }
+
 }
 
+// Euler task 
 void euler(int nb, iREAL * angular[6], iREAL * linear[3], iREAL * rotation[9], iREAL * position[3], iREAL step)
 {
   for(int i = 0; i<nb;i++)
@@ -344,6 +291,7 @@ void euler(int nb, iREAL * angular[6], iREAL * linear[3], iREAL * rotation[9], i
     position[2][i] += step * linear[2][i];
   }
 }
+
 
 void integrate (iREAL step, iREAL lo[3], iREAL hi[3], int nt, iREAL * t[3][3], iREAL * v[3])
 {

@@ -1,9 +1,8 @@
 #include "dynamics.h"
 #include "stdio.h"
 
-void dynamics (master_conpnt master[], slave_conpnt slave[],
-  std::vector<contact> conpnt[], int nt, int nb, iREAL *t[3][3], int *pid, iREAL * linear[3], iREAL * position[3],
-  iREAL mass[], iREAL * force[3], iREAL gravity[3], iREAL step)
+void dynamics (std::vector<contact> conpnt[], int nt, int nb, iREAL *t[3][3], int *pid, iREAL * linear[3], iREAL * position[3],
+              iREAL mass[], iREAL * force[3], iREAL gravity[3], iREAL step)
 {
   for (int i = 0; i < nb; i++) // force accumulation
   {

@@ -3,10 +3,10 @@ C_SRC=
 CPP_SRC = input.cpp output.cpp delta.cpp bf.cpp contact.cpp forces.cpp dynamics.cpp
 
 # ISPC files
-ISPC_SRC= 
+ISPC_SRC= delta.ispc
 
 # ISPC targets
-ISPC_TARGETS=avx
+ISPC_TARGETS= avx
 
 CC=gcc
 CXX=g++

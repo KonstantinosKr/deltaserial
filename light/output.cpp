@@ -1,6 +1,6 @@
 #include "output.h"
 
-void output_state(unsigned int nt, iREAL *t[6][3], unsigned int timesteps)
+void output_state(int nt, iREAL *t[6][3], int timesteps)
 {
   iREAL lo[3], hi[3];	
   lo[0] = -250; // lower corner
@@ -25,7 +25,7 @@ void output_state(unsigned int nt, iREAL *t[6][3], unsigned int timesteps)
 	
 	fprintf(fp,"# vtk DataFile Version 2.0\nOutput vtk file\nASCII\n\nDATASET UNSTRUCTURED_GRID\nPOINTS %i float\n", (nt*3)+8);
 		
-	unsigned int i;
+	int i;
 	for(i = 0; i < nt; i++)
 	{
 		fprintf(fp,"%.5f %.5f %.5f\n%.5f %.5f %.5f\n%.5f %.5f %.5f\n", t[0][0][i], t[0][1][i], t[0][2][i], t[1][0][i], t[1][1][i], t[1][2][i], t[2][0][i], t[2][1][i], t[2][2][i]);
@@ -69,7 +69,7 @@ void output_state(unsigned int nt, iREAL *t[6][3], unsigned int timesteps)
 	//3. -> 7.
 	//4. -> 8.
 	//
-	unsigned int ii = i;
+	int ii = i;
 	for(unsigned int j = 0; j < 3; j++)
 	{
 		fprintf(fp, "2 %i %i\n", i, i+1);
