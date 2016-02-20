@@ -2,7 +2,7 @@
 #include "stdio.h"
 
 void dynamics (master_conpnt master[], slave_conpnt slave[],
-  int nt, int nb, iREAL *t[3][3], int *pid, iREAL * linear[3], iREAL * position[3],
+  std::vector<contact> conpnt[], int nt, int nb, iREAL *t[3][3], int *pid, iREAL * linear[3], iREAL * position[3],
   iREAL mass[], iREAL * force[3], iREAL gravity[3], iREAL step)
 {
   for (int i = 0; i < nb; i++) // force accumulation
@@ -18,56 +18,30 @@ void dynamics (master_conpnt master[], slave_conpnt slave[],
 
     SET (fs, 0.0);
     SET (ts, 0.0);
-
-    for (master_conpnt * m = &master[i]; m; m = m->next)
+    
+    for(unsigned int j = 0; j<conpnt[i].size();j++)
     {
-      for(int j = 0; j<m->size;j++)
-      {
-        f[0] = m->force[0][j];
-        f[1] = m->force[1][j];
-        f[2] = m->force[2][j];
+      f[0] = conpnt[i][j].force[0];
+      f[1] = conpnt[i][j].force[1];
+      f[2] = conpnt[i][j].force[2];
 
-        a[0] = m->point[0][j]-po[0];
-        a[1] = m->point[1][j]-po[1];
-        a[2] = m->point[2][j]-po[2];
+      a[0] = conpnt[i][j].point[0]-po[0];
+      a[1] = conpnt[i][j].point[1]-po[1];
+      a[2] = conpnt[i][j].point[2]-po[2];
 
-        ACC (f, fs);
-        PRODUCTADD (a, f, ts);
-      }
+      ACC (f, fs);
+      PRODUCTADD (a, f, ts);
     }
-
-    int counter = 0;
-    for (slave_conpnt * s = &slave[i]; s; s = s->next)
-    {
-      counter++;
-      for(int j = 0;j<s->size;j++)
-      {
-        printf("Entered times:%i, iter:%i\n", counter, j);
-        f[0] = s->force[0][j];
-        f[1] = s->force[1][j];
-        f[2] = s->force[2][j];
-
-        a[0] = s->point[0][j]-po[0];
-        a[1] = s->point[1][j]-po[1];
-        a[2] = s->point[2][j]-po[2];
-
-        ACC (f, fs);
-        PRODUCTADD (a, f, ts);
-      }
-    }
-
+    
     force[0][i] = fs[0] + ma * gravity[0];
     force[1][i] = fs[1] + ma * gravity[1];
     force[2][i] = fs[2] + ma * gravity[2];
 
     printf("Total Force of body: %i is: %f %f %f\n", i, force[0][i], force[1][i], force[2][i]);
-  
-    slave_free(&slave[i]);
-    master_free(&master[i]);
-  }
+    
+    std::vector<contact>().swap(conpnt[i]);
 
-  for (int i = 0; i<nb; i++) // time integration 
-  {
+    //time integration
     iREAL im = (1/mass[i])*step;
 
     linear[0][i] = linear[0][i]+force[0][i]*im;

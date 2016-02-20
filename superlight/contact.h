@@ -3,6 +3,19 @@
 
 #include "algo.h"
 #include "bf.h"
+#include <vector>
+
+struct contact {
+  int pid[2];
+  int color[2];
+  iREAL point[3];
+  iREAL normal[3];
+  iREAL depth;
+  iREAL force[3];
+
+  contact(int pid[2], int color[2], iREAL point[3], iREAL normal[3], iREAL &depth);
+};
+
 
 #define CONBUF 8
 
@@ -34,10 +47,11 @@ struct slave_conpnt
   struct slave_conpnt * next; /* local list */
 };
 
+
 /* calculate distances */
 void contact_detection (int s1, int e1, int s2, int e2, 
-                        iREAL *t[6][3], int *tid, int *pid, iREAL *v[3], 
-                        iREAL *p[3], iREAL *q[3], master_conpnt *con);
+                        iREAL *t[3][3], int *tid, int *pid, iREAL *v[3], 
+                        iREAL *p[3], iREAL *q[3], master_conpnt *con, std::vector<contact> conpnt[]);
 
 master_conpnt * newcon (master_conpnt * master, int *k);
 slave_conpnt * newcon (slave_conpnt * slave, int *k);

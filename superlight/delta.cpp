@@ -8,6 +8,9 @@
 #include "output.h"
 #include "dynamics.h"
 #include "forces.h"
+#include <vector>
+
+using namespace std;
 
 int main (int argc, char **argv)
 {
@@ -88,7 +91,9 @@ int main (int argc, char **argv)
 
   con = (master_conpnt *) malloc (size*sizeof(master_conpnt));
   slave = (slave_conpnt *) malloc (size*sizeof(slave_conpnt));
-	
+
+  vector<contact> *conpnt = (vector<contact> *) malloc(size*sizeof(vector<contact>));
+
   parmat = (int *) malloc (size*sizeof(int));
 	
 	tid = (int *) malloc (size*sizeof(int));
@@ -109,13 +114,13 @@ int main (int argc, char **argv)
    
     printf("BODY1 XVelocity:%f\n", linear[2][0]);
     printf("BODY2 XVelocity:%f\n", linear[2][1]);
-    contact_detection (0, nt, 0, nt, t, tid, pid, linear, p, q, con);
+    contact_detection (0, nt, 0, nt, t, tid, pid, linear, p, q, con, conpnt);
     
-    forces(con, slave, nb, position, linear, mass, parmat, mparam, pairnum, pairs, ikind, iparam);
+    forces(con, slave, conpnt, nb, position, linear, mass, parmat, mparam, pairnum, pairs, ikind, iparam);
     
     printf("Forces derivation finished\n");
 
-    dynamics(con, slave, nt, nb, t, pid, linear, position, mass, force, gravity, step);
+    dynamics(con, slave, conpnt, nt, nb, t, pid, linear, position, mass, force, gravity, step);
    
     printf("Updated dynamics\n");
 

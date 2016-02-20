@@ -12,7 +12,7 @@ void granular(iREAL n[3], iREAL vij[3], iREAL depth, int i, int j, iREAL mass[],
   f[0] = fn*n[0];
   f[1] = fn*n[1];
   f[2] = fn*n[2];
-  printf("CONTACT F[0]: %f, F[1]: %f, F[2]: %f\n", f[0], f[1], f[2]); 
+  //printf("CONTACT F[0]: %f, F[1]: %f, F[2]: %f\n", f[0], f[1], f[2]); 
 }
 
 /*
@@ -37,90 +37,68 @@ int pairing (int nummat, int pairs[], int i, int j)
   return 0; /* default material */
 }
 
-void forces (master_conpnt master[], slave_conpnt slave[],
-    int nb, iREAL * position[3], iREAL * linear[3],
-    iREAL mass[], int parmat[], iREAL * mparam[NMAT],
+void forces (master_conpnt master[], slave_conpnt slave[], std::vector<contact> conpnt[],
+    int nb, iREAL * linear[3], iREAL mass[], int parmat[], iREAL * mparam[NMAT],
     int pairnum, int pairs[], int ikind[], iREAL * iparam[NINT])
 {
   for (int i = 0; i < nb; i++)
   {
-    iREAL v[3], x[3];
+    iREAL v[3];
 
     v[0] = linear[0][i];
     v[1] = linear[1][i];
     v[2] = linear[2][i];
-
-    x[0] = position[0][i];
-    x[1] = position[1][i];
-    x[2] = position[2][i];
-
-    /* update contact forces */
-    for (master_conpnt * con = &master[i]; con; con = con->next)
-    {
-      for(int k = 0; k<con->size; k++)
-      {
-        iREAL p[3], n[3], vi[3], vj[3], vij[3];
-
-        p[0] = con->point[0][k];
-        p[1] = con->point[1][k];
-        p[2] = con->point[2][k];
-
-        n[0] = con->normal[0][k];
-        n[1] = con->normal[1][k];
-        n[2] = con->normal[2][k];
-
-        vi[0] = v[0];
-        vi[1] = v[1];
-        vi[2] = v[2];
-
-        int j = con->slave[0][k]; //get index from slave body contact
-
-        vj[0] = linear[0][j];
-        vj[1] = linear[1][j];
-        vj[2] = linear[2][j];
-
-        SUB (vj, vi, vij); // relative linear velocity
-
-        int ij = pairing (pairnum, pairs, con->color[0][k], con->color[1][k]);//get material from colours
-      
-        iREAL f[3];
-
-        switch (ikind[ij])
-        {
-          case GRANULAR:
-            granular (n, vij, con->depth[k], i, j, mass, iparam, ij, f);
-            break;
-          default:
-            printf ("ERROR: invalid pairing kind");
-            break;
-        }
-       
-        con->force[0][k] = f[0];
-        con->force[1][k] = f[1];
-        con->force[2][k] = f[2];
-      }
-    }
     
-    /* symmetrical copy into slave contact points */
-    for (master_conpnt * con = &master[i]; con; con = con->next)
-    {
-      for (int j = 0; j < con->size; j++)
+    for(unsigned int k = 0; k<conpnt[i].size(); k++)
+    {  
+      iREAL p[3], n[3], vi[3], vj[3], vij[3];
+
+      p[0] = conpnt[i][k].point[0];
+      p[1] = conpnt[i][k].point[1];
+      p[2] = conpnt[i][k].point[2];
+
+      n[0] = conpnt[i][k].normal[0];
+      n[1] = conpnt[i][k].normal[1];
+      n[2] = conpnt[i][k].normal[2];
+
+      int ii = conpnt[i][k].pid[0];
+      
+      vi[0] = linear[0][ii];
+      vi[1] = linear[1][ii];
+      vi[2] = linear[2][ii];
+
+      int j = conpnt[i][k].pid[1]; //get index from slave body contact
+
+      vj[0] = linear[0][j];
+      vj[1] = linear[1][j];
+      vj[2] = linear[2][j];
+
+      SUB (vj, vi, vij); // relative linear velocity
+
+      int ij = pairing (pairnum, pairs, conpnt[i][k].color[0], conpnt[i][k].color[1]);//get material from colours
+    
+      iREAL f[3];
+
+      switch (ikind[ij])
       {
-        slave_conpnt *ptr;
-        int k;
-
-        ptr = newcon (&slave[con->slave[0][j]], &k);
-
-        ptr->master[0][k] = i;
-        ptr->master[1][k] = con->master[j];
-        
-        ptr->point[0][k] = con->point[0][j];
-        ptr->point[1][k] = con->point[1][j];
-        ptr->point[2][k] = con->point[2][j];
-        
-        ptr->force[0][k] = -con->force[0][j];
-        ptr->force[1][k] = -con->force[1][j];
-        ptr->force[2][k] = -con->force[2][j];
+        case GRANULAR:
+          granular (n, vij, conpnt[i][k].depth, i, j, mass, iparam, ij, f);
+          break;
+        default:
+          printf ("ERROR: invalid pairing kind");
+          break;
+      }
+     
+      if(conpnt[i][k].pid[0] = i)
+      {
+        conpnt[i][k].force[0] = f[0];
+        conpnt[i][k].force[1] = f[1];
+        conpnt[i][k].force[2] = f[2];
+      }else
+      {
+        conpnt[i][k].force[0] = -f[0];
+        conpnt[i][k].force[1] = -f[1];
+        conpnt[i][k].force[2] = -f[2];
       }
     }
   }
